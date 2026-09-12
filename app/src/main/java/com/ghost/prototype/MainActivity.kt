@@ -32,16 +32,20 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.ghost.prototype.detection.DetectionPanel
+import com.ghost.prototype.detection.DetectionPermissions
 
 class MainActivity : ComponentActivity() {
     private val viewModel: MainViewModel by viewModels()
     private var overlayPermission by mutableStateOf(false)
+    private var usagePermission by mutableStateOf(false)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
             val floating by viewModel.state.collectAsStateWithLifecycle()
+            val detection by viewModel.detection.collectAsStateWithLifecycle()
             MaterialTheme(colorScheme = lightColorScheme(primary = Color(0xFF6354B5))) {
                 Surface(modifier = Modifier.fillMaxSize()) {
                     Column(
@@ -70,6 +74,7 @@ class MainActivity : ComponentActivity() {
                             ) { Text(stringResource(R.string.stop)) }
                         }
                         floating.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+                        DetectionPanel(detection, usagePermission, ::openUsageSettings)
                         Text(stringResource(R.string.prototype_note), style = MaterialTheme.typography.bodySmall)
                     }
                 }
@@ -80,6 +85,15 @@ class MainActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
         overlayPermission = Settings.canDrawOverlays(this)
+        usagePermission = DetectionPermissions.usageAccess(this)
+    }
+
+    private fun openUsageSettings() {
+        try {
+            startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS))
+        } catch (_: ActivityNotFoundException) {
+            viewModel.permissionSettingsUnavailable()
+        }
     }
 
     private fun openOverlaySettings() {
@@ -90,4 +104,3 @@ class MainActivity : ComponentActivity() {
         }
     }
 }
-

@@ -18,10 +18,13 @@ import android.util.Log
 import com.ghost.prototype.GhostApplication
 import com.ghost.prototype.MainActivity
 import com.ghost.prototype.R
+import com.ghost.prototype.detection.UsageAppMonitor
 
 class FloatingService : Service() {
     private val state get() = (application as GhostApplication).floatingState
     private var overlay: OverlayController? = null
+    private val detection get() = (application as GhostApplication).detectionState
+    private val usageMonitor by lazy { UsageAppMonitor(this, detection) }
     private val handler = Handler(Looper.getMainLooper())
     private val permissionListener = AppOpsManager.OnOpChangedListener { op, packageName ->
         if (op == AppOpsManager.OPSTR_SYSTEM_ALERT_WINDOW && packageName == this.packageName) {
@@ -58,6 +61,10 @@ class FloatingService : Service() {
                     fail(R.string.error_overlay)
                 }.also { overlay = it }
                 controller.show()
+                if (state.state.value.visible) {
+                    detection.start(System.currentTimeMillis())
+                    usageMonitor.start()
+                }
             }
         } catch (error: RuntimeException) {
             Log.e("GhostFloating", "Unable to start overlay", error)
@@ -72,6 +79,7 @@ class FloatingService : Service() {
     }
 
     private fun fail(message: Int) {
+        usageMonitor.stop()
         state.failed(getString(message))
         overlay?.hide()
         stopForeground(STOP_FOREGROUND_REMOVE)
@@ -97,6 +105,7 @@ class FloatingService : Service() {
     }
 
     override fun onDestroy() {
+        usageMonitor.stop()
         getSystemService(AppOpsManager::class.java).stopWatchingMode(permissionListener)
         handler.removeCallbacksAndMessages(null)
         overlay?.hide()

@@ -10,6 +10,7 @@ import com.ghost.prototype.floating.FloatingService
 class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val app = application as GhostApplication
     val state = app.floatingState.state
+    val detection = app.detectionState.state
 
     fun start() {
         if (state.value.visible) return
@@ -27,6 +28,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun stop() {
+        app.detectionState.stop()
         app.stopService(Intent(app, FloatingService::class.java))
     }
 
