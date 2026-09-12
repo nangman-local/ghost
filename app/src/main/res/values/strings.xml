@@ -23,6 +23,17 @@
     <string name="detection_permission_required">권한 필요</string>
     <string name="detection_observing">관측 중</string>
     <string name="detection_unavailable">시스템에서 정보를 가져오지 못했어요.</string>
+    <string name="chrome_accessibility_label">GHOST Chrome 감지 테스트</string>
+    <string name="chrome_accessibility_description">Chrome 도메인·제목 관측용 내부 프로토타입입니다. GHOST의 시작 버튼을 누른 동안에만 Chrome 주소창과 페이지/창 제목 메타데이터를 읽습니다. 본문·비밀번호·편집 중 주소는 읽지 않으며 터치를 대신 수행하지 않습니다. 결과는 메모리에만 표시하고 종료 시 지웁니다. 저장·서버 전송·자동 개입은 없습니다.</string>
+    <string name="chrome_disclosure">Chrome 테스트: 접근성에서 ‘GHOST Chrome 감지 테스트’를 켜 주세요. 시작 중에만 주소창의 도메인과 페이지/창 제목을 읽어요. 본문·비밀번호·편집 중 주소는 읽지 않아요. 종료 후 접근성이 켜져 있어도 관측하지 않아요. 제목이나 주소창이 공개되지 않으면 미감지로 표시해요.</string>
+    <string name="chrome_connected">Chrome 접근성: 연결됨</string>
+    <string name="chrome_disconnected">Chrome 접근성: 연결 안 됨</string>
+    <string name="chrome_settings">Chrome 접근성 설정</string>
+    <string name="chrome_status">Chrome 감지: %1$s</string>
+    <string name="recent_domain">최근 Chrome 도메인\n%1$s</string>
+    <string name="recent_page_title">페이지 제목 메타데이터\n%1$s</string>
+    <string name="recent_window_title">창 제목 (페이지 제목과 다를 수 있음)\n%1$s</string>
+    <string name="chrome_observed_at">Chrome 관측 시각: %1$s</string>
     <string name="notification_channel">플로팅 캐릭터</string>
     <string name="notification_title">GHOST가 떠 있어요</string>
     <string name="notification_text">종료하려면 앱을 열어 종료 버튼을 눌러 주세요.</string>

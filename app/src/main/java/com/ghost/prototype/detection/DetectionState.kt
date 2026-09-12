@@ -13,18 +13,48 @@ data class DetectionState(
     val startedAt: Long = 0,
     val usageStatus: ObservationStatus = ObservationStatus.STOPPED,
     val recentApp: AppObservation? = null,
+    val chromeConnected: Boolean = false,
+    val chromeUnavailable: Boolean = false,
+    val recentChrome: ChromeObservation? = null,
 )
 
 /** Process-local diagnostic data, not the server's focus session or a usage history. */
 class DetectionStateStore(private val ownPackage: String) {
     private val mutableState = MutableStateFlow(DetectionState())
     val state = mutableState.asStateFlow()
+    var runId: Long = 0
+        private set
 
     fun start(now: Long) {
-        if (!state.value.running) mutableState.value = DetectionState(running = true, startedAt = now)
+        if (!state.value.running) {
+            runId++
+            mutableState.value = DetectionState(running = true, startedAt = now, chromeConnected = state.value.chromeConnected)
+        }
     }
 
-    fun stop() { mutableState.value = DetectionState() }
+    fun stop() {
+        runId++
+        mutableState.value = DetectionState(chromeConnected = state.value.chromeConnected)
+    }
+
+    fun chromeConnected(connected: Boolean) {
+        mutableState.update {
+            it.copy(chromeConnected = connected, chromeUnavailable = false,
+                recentChrome = if (connected) it.recentChrome else null)
+        }
+    }
+
+    fun chromeUnavailable() {
+        mutableState.update { if (it.running) it.copy(chromeUnavailable = true, recentChrome = null) else it }
+    }
+
+    fun chromeObserved(observation: ChromeObservation) {
+        mutableState.update {
+            if (!it.running || !it.chromeConnected || observation.observedAt < it.startedAt ||
+                observation.observedAt < (it.recentChrome?.observedAt ?: it.startedAt)
+            ) it else it.copy(recentChrome = observation, chromeUnavailable = false)
+        }
+    }
 
     fun usageStatus(status: ObservationStatus) {
         mutableState.update { if (it.running) it.copy(usageStatus = status) else it }

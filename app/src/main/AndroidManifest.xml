@@ -19,12 +19,22 @@
             </intent-filter>
         </activity>
         <service
+            android:name=".detection.ChromeAccessibilityService"
+            android:exported="true"
+            android:label="@string/chrome_accessibility_label"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data android:name="android.accessibilityservice" android:resource="@xml/chrome_accessibility_service" />
+        </service>
+        <service
             android:name=".floating.FloatingService"
             android:exported="false"
             android:foregroundServiceType="specialUse">
             <property
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
-                android:value="User-started visible floating character with in-memory foreground app diagnostics. Runs only until stopped or process termination; no persistence, network, or automatic restart." />
+                android:value="User-started visible floating character with in-memory foreground app and Chrome metadata diagnostics. Runs only until stopped or process termination; no persistence, network, or automatic restart." />
         </service>
     </application>
 </manifest>

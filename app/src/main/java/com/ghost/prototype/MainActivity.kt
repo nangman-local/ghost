@@ -74,7 +74,7 @@ class MainActivity : ComponentActivity() {
                             ) { Text(stringResource(R.string.stop)) }
                         }
                         floating.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-                        DetectionPanel(detection, usagePermission, ::openUsageSettings)
+                        DetectionPanel(detection, usagePermission, ::openUsageSettings, ::openAccessibilitySettings)
                         Text(stringResource(R.string.prototype_note), style = MaterialTheme.typography.bodySmall)
                     }
                 }
@@ -91,6 +91,14 @@ class MainActivity : ComponentActivity() {
     private fun openUsageSettings() {
         try {
             startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS))
+        } catch (_: ActivityNotFoundException) {
+            viewModel.permissionSettingsUnavailable()
+        }
+    }
+
+    private fun openAccessibilitySettings() {
+        try {
+            startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
         } catch (_: ActivityNotFoundException) {
             viewModel.permissionSettingsUnavailable()
         }
