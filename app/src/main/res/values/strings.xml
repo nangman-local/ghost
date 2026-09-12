@@ -1,0 +1,23 @@
+<resources>
+    <string name="app_name">GHOST 플로팅</string>
+    <string name="prototype_title">플로팅 프로토타입</string>
+    <string name="prototype_description">다른 앱 위에 작은 유령을 띄워 보세요. 드래그하면 이동하고, 가볍게 탭하면 인사해요. 바깥 영역은 평소처럼 터치할 수 있어요.</string>
+    <string name="permission_title">다른 앱 위에 표시</string>
+    <string name="permission_granted">권한이 허용되어 있어요.</string>
+    <string name="permission_required">유령을 띄우려면 시스템 설정에서 표시 권한을 허용해 주세요.</string>
+    <string name="permission_button">표시 권한 설정</string>
+    <string name="start">시작</string>
+    <string name="stop">종료</string>
+    <string name="status_running">유령을 표시하고 있어요.</string>
+    <string name="status_stopped">유령이 꺼져 있어요.</string>
+    <string name="prototype_note">임시 캐릭터 · 드래그 이동 · 탭하면 인사\n종료 후 위치와 말풍선은 초기화돼요. 자동 이동·감지·서버 연동·자동 재시작은 없어요.</string>
+    <string name="notification_channel">플로팅 캐릭터</string>
+    <string name="notification_title">GHOST가 떠 있어요</string>
+    <string name="notification_text">종료하려면 앱을 열어 종료 버튼을 눌러 주세요.</string>
+    <string name="ghost_description">탭하면 인사하고 드래그하면 이동하는 임시 유령</string>
+    <string name="greeting">안녕?</string>
+    <string name="ghost_greeting_description">안녕? 드래그해서 이동하는 임시 유령</string>
+    <string name="error_permission">표시 권한이 없어 유령을 띄울 수 없어요.</string>
+    <string name="error_overlay">유령을 표시하지 못했어요. 권한을 확인한 뒤 시작을 눌러 주세요.</string>
+    <string name="error_settings">시스템 권한 설정을 열지 못했어요. 기기의 앱 설정에서 권한을 확인해 주세요.</string>
+</resources>
