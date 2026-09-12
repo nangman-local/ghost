@@ -14,4 +14,3 @@ dependencyResolutionManagement {
 }
 rootProject.name = "GhostFloatingPrototype"
 include(":app")
-
