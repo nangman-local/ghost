@@ -6,7 +6,7 @@ Android 클라이언트 (Kotlin + Jetpack Compose)
 
 - 담당: Android 코어 오너(정수) / 서브(현기)
 - 역할: 포그라운드 서비스, `UsageStatsManager` 기반 현재 앱 감지, `AccessibilityService` 기반 브라우저 URL/제목 감지, `WindowManager` 오버레이 플로팅 캐릭터, 개입 상태머신, 캘린더 읽기
-- 상태: Spike 1~3 통합 테스트용 구현. 플로팅 + 최근 앱 + Chrome 도메인/제목 관측. 새 감지 기능의 삼성 실기기 인수 검증은 대기 중이며 서버 연동은 미구현.
+- 상태: Spike 1~3 통합 테스트용 구현. 플로팅 + 최근 앱 + Chrome 도메인/제목 관측. 삼성 실기기에서 기본 플로팅·Chrome 앱·도메인/창 제목 감지를 확인했다. 전체 인수 검증은 남아 있으며 서버 연동은 미구현.
 
 이 저장소는 GHOST의 독립 Android 기술 스파이크다. 전체 제품에서는 서버 세션이 정본이며 이 로컬 진단 상태가 서버 세션을 대체하지 않는다. 감지·오버레이 변경은 Android 코어 오너 리뷰 후 머지한다.
 
@@ -137,7 +137,12 @@ export ANDROID_HOME=/path/to/Android/Sdk
 - 통합 단위 테스트 **35개 통과**: 기존 플로팅 13개, 앱/실행 수명 6개, Chrome 정제/탐색 경계 10개, Chrome 연결/실행 수명 6개.
 - `lintDebug`: 오류 0개, 경고 12개. 기존 업데이트/KTX/백업 권고와 `isAccessibilityTool`의 API 31 미만 무시 경고. 무관한 라이브러리 업그레이드는 하지 않았다.
 - 앱/계측 테스트 APK 빌드 통과. 별도 타입 검사 도구 대신 Kotlin 컴파일을 수행했다.
-- **새 통합 APK의 삼성 실기기/Chrome 검증 및 시각 대조 미완료**. 이전 플로팅 계측 2개 통과를 새 감지 기능의 통과로 계산하지 않는다. 현재 ADB 연결 기기 없음.
-- 필수 `visual-verdict` 스킬 미설치로 미실행. UI 변경 스크린샷은 통합 기기 테스트 때 GHOST 화면만 확인 후 추가한다.
+- 2026-09-12 삼성 SM-G998N / Android 15에 **통합 APK 0.2.0(2) 설치**, `OverlayControllerDeviceTest` 2개 재통과. 플로팅과 탭 인사 말풍선을 실제 GHOST 화면에서도 확인했다.
+- Chrome 152.0.7977.82에서 최근 외부 앱 `com.android.chrome` 관측 확인. GHOST로 복귀한 뒤에도 최근 외부 앱과 관측 시각 표시를 확인했다.
+- 공개 테스트 페이지에서 **`example.com` + 창 제목 `Chrome: Example Domain`**, **`google.com` + 창 제목 `Chrome: Google`** 표시를 확인했다. example.com 테스트 URL의 `?ghost_test=123#probe`는 도메인 결과에 남지 않았다. 사용자도 Google 감지 결과 표시를 확인했다.
+- 위 제목은 **창 제목 대체값**이며 문서 루트의 페이지 제목 직접 감지가 통과했다는 뜻은 아니다. Chrome 새 탭/주소창 편집/전체 화면 등은 아직 검증하지 않았다.
+- 진단 중 `uiautomator dump`가 접근성 연결을 일시 중단하는 간섭을 확인했다. 해당 도구를 제외하고 공개 페이지를 다시 열어 GHOST의 실제 화면 캡처로 감지를 재확인했다. 접근성 검증에서 기본 UIAutomation의 서비스 억제 동작에 주의한다([공식 문서](https://developer.android.com/reference/android/app/UiAutomation#FLAG_DONT_SUPPRESS_ACCESSIBILITY_SERVICES)).
+- **남은 검증:** 여러 앱 전환, 통합 실행의 종료·재시작/권한 철회/잠금·회전 및 전체 UI·터치 인수 체크리스트. 기본 동작 확인과 전체 인수를 구분한다.
+- 필수 `visual-verdict` 스킬은 미설치로 미실행. 확인한 GHOST 화면과 계측 로그는 로컬 검증 자료이며 개인 휴대폰 원본 자료는 저장소에 포함하지 않는다.
 
 근거: [UsageStatsManager](https://developer.android.com/reference/android/app/usage/UsageStatsManager), [접근성 서비스](https://developer.android.com/guide/topics/ui/accessibility/service), [창 제목](https://developer.android.com/reference/android/view/accessibility/AccessibilityWindowInfo#getTitle()), [Chromium 주소창 ID](https://github.com/chromium/chromium/blob/main/chrome/android/java/res/layout/url_bar.xml), [Chromium 문서 루트 텍스트 처리](https://github.com/chromium/chromium/blob/main/content/browser/accessibility/browser_accessibility_android.cc). Chromium 내부 구조는 안정된 외부 계약이 아니므로 대상 기기 Chrome에서의 확인이 필요하다. 접근성 기능의 Play 정책 적합성은 별도 검토 대상이며 이 내부 스파이크의 빌드 성공이 배포 승인 근거는 아니다.
