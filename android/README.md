@@ -2,7 +2,7 @@
 
 [GHOST](../README.md) 모노레포의 **Android 클라이언트** (Kotlin + Jetpack Compose).
 
-- 담당: Android 코어 오너(정수) / 서브(현기)
+- 담당: Android 코어 오너 / Android 서브
 - 역할: 포그라운드 서비스, `UsageStatsManager` 기반 현재 앱 감지, `AccessibilityService` 기반 브라우저 도메인/제목 감지, `WindowManager` 오버레이 플로팅 캐릭터, 개입 상태머신, 캘린더 읽기
 - 상태: Spike 1~3 통합 구현. 플로팅 + 최근 앱 + Chrome 도메인/제목 관측. 삼성 실기기에서 기본 동작을 확인했다. 전체 인수 검증은 남아 있으며 서버 연동은 미구현.
 - 규칙: [`AGENTS.md`](./AGENTS.md) — 작업 전 루트 [`AGENTS.md`](../AGENTS.md)도 읽으세요
