@@ -29,6 +29,21 @@ npm의 `allowScripts` 정책 때문에 install 스크립트가 기본으로 막�
 - `electron`: 바이너리를 다운로드하는 스크립트가 필요합니다. `package.json`의 `allowScripts`에 허용해 두었습니다. 그래도 `node_modules/electron/dist/electron.exe`가 없으면 `node node_modules/electron/install.js`를 실행하세요.
 - `get-windows`: Windows x64용 N-API 프리빌드(`lib/binding/napi-9-win32-unknown-x64`)가 패키지에 포함되어 있어 빌드 스크립트가 필요 없습니다. N-API라서 Electron용으로 다시 빌드하지 않아도 로드됩니다.
 
+## `npm start`가 안 될 때
+
+반드시 `package.json`이 있는 이 폴더(저장소 루트)에서 실행하세요. 경로에 공백이 있으면 `cd "C:\경로\2026-2 yeso\desktop"`처럼 따옴표로 감싸야 합니다.
+
+| 증상 | 원인 | 해결 |
+| --- | --- | --- |
+| `npm.ps1 파일을 로드할 수 없습니다` / `running scripts is disabled on this system` | Windows PowerShell의 스크립트 실행 정책이 기본으로 막혀 있음 | `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`를 한 번 실행하거나, `npm.cmd start`로 실행 (cmd나 Git Bash에서는 `npm start` 그대로 동작) |
+| `Missing script: "start"` / `ENOENT ... package.json` | 다른 폴더에서 실행함 | `dir package.json`으로 파일이 보이는 폴더인지 확인 |
+| `'electron'은(는) 내부 또는 외부 명령...이 아닙니다` | `npm install`을 안 함 | `npm install` |
+| `Electron failed to install correctly` / `electron.exe`가 없음 | npm 11+의 allowScripts 정책으로 Electron 바이너리 다운로드가 막힘 | `node node_modules/electron/install.js` 실행 뒤 다시 `npm start` |
+| 터미널 한글이 `?ㅽ뙆?댄겕`처럼 깨짐 | 콘솔 코드페이지(CP949) 문제이며 동작에는 영향 없음 | 실행 전에 `chcp 65001` |
+| 실행은 됐는데 아무것도 안 보임 | 캐릭터는 작업표시줄 아이콘 없이 **화면 오른쪽 아래 구석**에 작게 뜸 | 오른쪽 아래를 확인. 터미널에 `[active] ...`이 찍히면 정상 실행 중 |
+| `[activeWindow] 결과가 비어 있습니다` 경고가 계속 나옴 | get-windows 네이티브 바인딩 로드 실패 (x64가 아닌 환경 등) | `npm run probe`로 따로 확인하고, `node_modules/get-windows/lib/binding/`에 `napi-9-win32-unknown-x64`가 있는지 확인 |
+| 이미 실행 중인데 다시 실행하면 바로 꺼짐 | 단일 인스턴스 잠금 | 기존 인스턴스를 `Ctrl+Shift+Q`로 종료하거나 작업 관리자에서 `electron.exe` 종료 |
+
 ## 구조
 
 ```
