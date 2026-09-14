@@ -1,9 +1,10 @@
 # GHOST Desktop (Electron)
 
-Windows PC 클라이언트. 현재는 **기술 스파이크** 단계입니다.
+[GHOST](../README.md) 모노레포의 **Windows PC 클라이언트**입니다. 현재는 기술 스파이크 단계입니다.
 
 - 담당: 정호 (프론트)
-- 상태: 스파이크 코드 작성 완료, 실기기 수동 검증 필요
+- 상태: 스파이크 완료, Windows 실기기 수동 검증 완료 (2026-09-14)
+- 규칙: [`AGENTS.md`](./AGENTS.md) — 작업 전 루트 [`AGENTS.md`](../AGENTS.md)도 읽으세요
 
 ## 스파이크 목표
 
@@ -72,7 +73,7 @@ npm start
 
 ## `npm start`가 안 될 때 (Windows)
 
-반드시 `package.json`이 있는 이 폴더(저장소 루트)에서 실행하세요. 경로에 공백이 있으면 `cd "C:\경로\2026-2 yeso\desktop"`처럼 따옴표로 감싸야 합니다.
+반드시 `package.json`이 있는 `desktop/` 폴더에서 실행하세요. 경로에 공백이 있으면 `cd "C:\경로\ghost\desktop"`처럼 따옴표로 감싸야 합니다.
 
 | 증상 | 원인 | 해결 |
 | --- | --- | --- |
@@ -143,5 +144,5 @@ src/
 
 - 트레이 아이콘 (종료·일시정지)
 - 감지 이벤트 정규화 → `shared/api-schema`와 맞추기
-- `shared/rules-dictionary.json` 기반 로컬 규칙 판단
+- [`shared/distract-rules.json`](../shared/distract-rules.json) 기반 로컬 규칙 판단
 - Rive 캐릭터 연동 (캔버스 하나로 그려지므로 클릭 판정은 경계 박스 또는 알파 샘플링)

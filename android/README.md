@@ -1,14 +1,13 @@
-# Mobile
+# GHOST Android
 
-This repo is for mobile programming
-
-Android 클라이언트 (Kotlin + Jetpack Compose)
+[GHOST](../README.md) 모노레포의 **Android 클라이언트** (Kotlin + Jetpack Compose).
 
 - 담당: Android 코어 오너(정수) / 서브(현기)
-- 역할: 포그라운드 서비스, `UsageStatsManager` 기반 현재 앱 감지, `AccessibilityService` 기반 브라우저 URL/제목 감지, `WindowManager` 오버레이 플로팅 캐릭터, 개입 상태머신, 캘린더 읽기
-- 상태: Spike 1~3 통합 테스트용 구현. 플로팅 + 최근 앱 + Chrome 도메인/제목 관측. 삼성 실기기에서 기본 플로팅·Chrome 앱·도메인/창 제목 감지를 확인했다. 전체 인수 검증은 남아 있으며 서버 연동은 미구현.
+- 역할: 포그라운드 서비스, `UsageStatsManager` 기반 현재 앱 감지, `AccessibilityService` 기반 브라우저 도메인/제목 감지, `WindowManager` 오버레이 플로팅 캐릭터, 개입 상태머신, 캘린더 읽기
+- 상태: Spike 1~3 통합 구현. 플로팅 + 최근 앱 + Chrome 도메인/제목 관측. 삼성 실기기에서 기본 동작을 확인했다. 전체 인수 검증은 남아 있으며 서버 연동은 미구현.
+- 규칙: [`AGENTS.md`](./AGENTS.md) — 작업 전 루트 [`AGENTS.md`](../AGENTS.md)도 읽으세요
 
-이 저장소는 GHOST의 독립 Android 기술 스파이크다. 전체 제품에서는 서버 세션이 정본이며 이 로컬 진단 상태가 서버 세션을 대체하지 않는다. 감지·오버레이 변경은 Android 코어 오너 리뷰 후 머지한다.
+이 폴더는 GHOST의 Android 기술 스파이크 단계다. **서버 세션이 진실의 원천이며 이 로컬 진단 상태가 서버 세션을 대체하지 않는다.** 감지·오버레이 변경은 Android 코어 오너 리뷰 후 머지한다.
 
 ## 현재 프로토타입 범위
 
@@ -47,10 +46,10 @@ detection/DetectionPanel       최근 관측/권한/미감지 상태 표시
 - Android SDK Platform 36 / Build Tools 35.0.0, JDK 17 이상.
 - Gradle Wrapper 8.14.3 / AGP 8.11.0 / Kotlin 2.1.20.
 - `minSdk 26`, `targetSdk 36`. Android 8~16 전체 실기기 호환성이 검증됐다는 뜻은 아니다.
-- Android Studio에서 이 저장소 루트 폴더를 열거나 아래 명령을 사용한다.
+- Android Studio에서 `android/` 폴더를 열거나 아래 명령을 사용한다.
 
 ```sh
-# 저장소 루트에서 실행
+# android/ 폴더에서 실행
 export ANDROID_HOME=/path/to/Android/Sdk
 ./gradlew :app:testDebugUnitTest
 ./gradlew :app:lintDebug
