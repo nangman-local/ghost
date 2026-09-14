@@ -32,16 +32,32 @@ jobs:
           echo "$CHANGED" >> "$GITHUB_STEP_SUMMARY"
           echo '```' >> "$GITHUB_STEP_SUMMARY"
 
-          # PR 본문에 면제 사유가 적혀 있으면 통과
-          if printf '%s' "$BODY" | grep -qiE '문서 변경이? 불필요|no-docs-needed'; then
-            echo "면제 사유가 PR 본문에 있어 통과합니다." >> "$GITHUB_STEP_SUMMARY"
+          # PR 본문에 면제 선언이 있으면 통과.
+          # 명시적 마커만 인정한다. 예전처럼 "문서 변경이 불필요" 같은 자연어를
+          # 찾으면 PR 템플릿에 그 문구가 들어 있어서, 템플릿을 그대로 쓴 모든
+          # PR이 검사를 통째로 건너뛴다. 의도적으로 적어야만 걸리게 한다.
+          #
+          # 들여쓰기를 허용하지 않는 이유: 템플릿 주석 안의 "예시"를 들여쓰기로
+          # 무력화하려면, 정규식이 줄 맨 앞(공백 0개)만 인정해야 한다.
+          # 코드블록(``` ... ```) 안은 제외한다. 그러지 않으면 이 규칙을 문서화하는
+          # PR이 예시 줄만으로 스스로 면제되어 버린다. 실제로 그렇게 당했다.
+          BODY_NO_CODE=$(printf '%s' "$BODY" | awk '/^[[:space:]]*```/{inb=!inb; next} !inb')
+          if printf '%s' "$BODY_NO_CODE" | grep -qE '^NO-DOCS-NEEDED:[[:space:]]*[^<[:space:]]'; then
+            REASON=$(printf '%s' "$BODY_NO_CODE" | grep -oE '^NO-DOCS-NEEDED:.*' | head -1)
+            echo "면제 선언이 있어 통과합니다 — \`$REASON\`" >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
 
           FAIL=0
           for DIR in android desktop server web; do
-            # 해당 폴더에 코드 변경이 있는지 (AGENTS.md 자신은 제외)
-            CODE=$(echo "$CHANGED" | grep "^$DIR/" | grep -v "^$DIR/AGENTS.md$" || true)
+            # 해당 폴더에 "코드" 변경이 있는지 확인한다.
+            # 문서(.md)·이미지·잠금 파일만 바꾼 PR은 AGENTS.md 갱신을 요구하지 않는다.
+            # 이걸 빼면 README 오타 수정에도 CI가 실패해서, 팀이 면제 사유를 습관적으로 쓰게 된다.
+            CODE=$(echo "$CHANGED" \
+              | grep "^$DIR/" \
+              | grep -vE "\.(md|png|jpg|jpeg|gif|svg|webp)$" \
+              | grep -vE "(^|/)(package-lock\.json|\.gitignore|\.gitattributes|\.nvmrc)$" \
+              || true)
             [ -z "$CODE" ] && continue
 
             if echo "$CHANGED" | grep -q "^$DIR/AGENTS.md$"; then

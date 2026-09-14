@@ -1,10 +1,14 @@
 # desktop/ — Windows PC 클라이언트
 
 Electron. 팀 공통 규칙은 루트 [`AGENTS.md`](../AGENTS.md), 공통 정의는 [`shared/`](../shared/)를 따른다.
+실행 방법과 트러블슈팅은 [`README.md`](./README.md).
 
 담당: 정호(프론트, W3~)
 
-**현재 상태:** Spike 4 완료. 활성 창 감지 + 투명 오버레이 캐릭터 + 클릭 통과, 실기기 수동 검증 완료. 서버 연동은 미구현. 작업 상세는 [`CLAUDE.md`](./CLAUDE.md) 참고.
+> 이 폴더에 있던 `CLAUDE.md`는 독립 저장소 시절의 작업 현황 문서라 삭제했다.
+> 제약·결정사항은 이 파일에, 실행·검증은 `README.md`에 있다. **중복해서 쓰지 않는다.**
+
+**현재 상태:** Spike 4 완료. 활성 창 감지 + 투명 오버레이 캐릭터 + 클릭 통과, Windows 실기기 수동 검증 완료 (2026-09-14, 정호). 서버·Rive 연동은 미구현.
 
 ## 실행
 
@@ -49,7 +53,43 @@ OS 의존 코드는 `platform/`에만 둔다.
 
 `contextIsolation` · `sandbox` · `nodeIntegration: false` · CSP를 유지한다. **API 키를 이 폴더에 넣지 않는다.**
 
+## 플랫폼 제약 (OS 수준, 앱에서 못 막음)
+
+셸 UI(시작 메뉴, Alt+Tab, 알림 센터), 독점 전체화면 게임, UAC 보안 데스크톱에는 오버레이가 가려지는 것이 정상이다.
+
+## 알게 된 것 / 결정 사항
+
+- **Windows 우선 개발, 맥은 나중에 지원 (2026-09-14 결정).** OS마다 달라지는 값은 `platform/{win32,darwin}.js`에만 두고 공통 코드에 `process.platform` 분기를 넣지 않는다. `darwin.js`는 미검증 초안(`verified: false`)이라 실행 시 경고가 뜬다.
+- **드래그에 `-webkit-app-region: drag`를 쓰지 않는다.** 클릭 통과와 충돌한다. 렌더러 내부 CSS 좌표로 이동시킨다.
+- **오버레이를 전체 화면 크기로 만든 이유:** 나중에 개입 3단계(화면 일부 가리기)가 필요하기 때문이다.
+- get-windows는 N-API 프리빌드(`napi-9-win32-unknown-x64`)가 포함되어 `@electron/rebuild`가 필요 없다. macOS 프리빌드도 들어 있다.
+- 테스트용 앱을 `Start-Process -WindowStyle Hidden`으로 띄우면 첫 show 호출이 숨김으로 바뀐다. 쓰지 말 것.
+- 맥 예상 차이: 화면 기록 권한 없으면 창 제목이 빈 문자열, 손쉬운 사용 권한 없으면 URL 없음. 전체화면 앱은 별도 Space라 `visibleOnFullScreen` 필요. 배포에는 코드서명·공증 필요.
+
+## IPC 채널
+
+| 채널 | 방향 | 내용 |
+| --- | --- | --- |
+| `overlay:set-interactive` | renderer → main | 커서가 캐릭터 위인지 |
+| `app:quit` | renderer → main | 종료 |
+| `active-window:changed` | main → renderer | `{appName, title, domain, path, processId, at}` |
+
+`domain`은 **macOS에서만** 값이 있고 Windows는 항상 `null`이다.
+
 ## 검증
 
-- GDI 스크린샷(`CopyFromScreen`/`BitBlt`)에는 **투명 오버레이가 찍히지 않는다.** 표시 확인은 `webContents.capturePage()`나 Win32 Z-order 조회(`GetTopWindow`/`GetWindow`)를 쓴다.
-- 미확인 항목: 전체화면 영상/게임, 배율 125%/150%, 다중 모니터, CPU 사용량, VS Code 전환 감지
+- GDI 스크린샷(`CopyFromScreen`/`BitBlt`)에는 **투명 오버레이가 찍히지 않는다.** 표시 확인은 `webContents.capturePage()`나 Win32 Z-order 조회(`GetTopWindow`/`GetWindow`)를 쓴다. 데모 녹화는 Windows 캡처 도구나 OBS(Windows Graphics Capture)를 쓴다.
+- **확인 완료 (2026-09-14, 10~20분 실사용):** 클릭 통과, 캐릭터 클릭·드래그, 캡처 도구 사용 후 topmost 복구, 다른 창 최대화 시에도 표시, 메모장 타이핑 중 포커스 유지. Chrome·탐색기·캡처 도구·터미널·카카오톡 전환 감지. 크래시 없음.
+- **미확인:** 전체화면 영상/게임, 배율 125%/150%, 다중 모니터, CPU 사용량, VS Code 전환 감지.
+
+## 다음 할 일
+
+1. 트레이 아이콘 (종료·일시정지·디버그 표시 토글)
+2. 감지 이벤트 정규화 `{ appName, title, since, durationSec }` + 유지 시간 디바운스
+3. `shared/distract-rules.json` 기반 로컬 규칙 판단 (FOCUS/DISTRACT/AMBIGUOUS)
+4. 개입 상태머신 — Android와 같은 전이 규칙 ([`shared/states.md`](../shared/states.md))
+5. 서버 연동: 30초 하트비트, WebSocket 이벤트 수신
+6. Rive 캐릭터 연동 (`@rive-app/canvas`. 캔버스 하나로 그려지므로 클릭 판정은 경계 박스 또는 알파 샘플링)
+7. 설정 창 · 할 일 선택 · "할 일 관련이야" 교정 UI
+8. electron-builder로 Windows 설치 파일 만들기
+9. (나중에) 맥 스파이크 — `darwin.js` 실기기 검증, 권한 온보딩, 코드서명·공증
