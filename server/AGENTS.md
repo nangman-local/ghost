@@ -2,7 +2,7 @@
 
 Spring Boot + PostgreSQL (또는 Supabase). 팀 공통 규칙은 루트 [`AGENTS.md`](../AGENTS.md), 공통 정의는 [`shared/`](../shared/)를 따른다.
 
-담당: 경민(인증·세션·동기화) · 진형(`/judge`·AI)
+담당: 서버·동기화 · AI 판단
 
 **현재 상태:** 스캐폴드. 구현 시작 전.
 

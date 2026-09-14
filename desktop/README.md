@@ -2,7 +2,7 @@
 
 [GHOST](../README.md) 모노레포의 **Windows PC 클라이언트**입니다. 현재는 기술 스파이크 단계입니다.
 
-- 담당: 정호 (프론트)
+- 담당: 프론트
 - 상태: 스파이크 완료, Windows 실기기 수동 검증 완료 (2026-09-14)
 - 규칙: [`AGENTS.md`](./AGENTS.md) — 작업 전 루트 [`AGENTS.md`](../AGENTS.md)도 읽으세요
 

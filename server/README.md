@@ -2,7 +2,7 @@
 
 [GHOST](../README.md) 모노레포의 **백엔드**. Spring Boot + PostgreSQL (또는 Supabase).
 
-- 담당: 경민(인증·세션·동기화) / 진형(`/judge`·AI)
+- 담당: 서버·동기화 / AI 판단
 - 상태: **스캐폴드. 구현 시작 전.**
 - 규칙: [`AGENTS.md`](./AGENTS.md) — 작업 전 루트 [`AGENTS.md`](../AGENTS.md)도 읽으세요
 
