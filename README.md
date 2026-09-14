@@ -13,6 +13,8 @@ Windows PC 클라이언트. 현재는 **기술 스파이크** 단계입니다.
 
 ## 실행
 
+요구 사항: Windows 10/11 x64, **Node.js 24 이상 (LTS 권장)**. `.nvmrc`와 `package.json`의 `engines`에 명시되어 있습니다. npm 버전은 따로 고정하지 않았고, Node에 포함된 npm을 사용합니다.
+
 ```powershell
 npm install
 npm start

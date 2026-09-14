@@ -79,6 +79,11 @@ IPC 채널: `overlay:set-interactive`(renderer→main), `app:quit`(renderer→ma
 8. [ ] 설정 창·할 일 선택·"할 일 관련이야" 교정 UI (호연 님 디자인)
 9. [ ] electron-builder로 Windows 설치 파일 만들기
 
+## 개발 환경
+
+- Node.js 24 이상 (`.nvmrc`, `engines`). 작성자 PC 기준 Node 24.18.0 / npm 11.16.0. npm 버전은 팀 합의가 없어 고정하지 않음
+- 줄바꿈은 `.gitattributes`로 LF 통일 (Windows 스크립트 `.bat/.cmd/.ps1`만 CRLF)
+
 ## 브랜치
 
 - 스파이크 작업 브랜치: `spike4` (`main`의 Initial commit에서 분기)
