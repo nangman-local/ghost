@@ -11,6 +11,8 @@
 
 공통 정의(상태 이름·API 스키마·규칙 사전·이벤트)는 [`shared/`](./shared/) 가 단일 진실의 원천입니다.
 
+서비스 개요는 [`README.md`](./README.md), 브랜치·커밋·PR 규칙은 [`CONTRIBUTING.md`](./CONTRIBUTING.md) 에 있습니다.
+
 ## 작업 후
 
 코드를 바꿨으면 **해당 폴더의 `AGENTS.md` 도 갱신하세요.** 새로 알게 된 제약이나 결정사항을 적습니다.
