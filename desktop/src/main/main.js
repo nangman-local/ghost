@@ -41,3 +41,5 @@ app.on('will-quit', () => {
 });
 
 app.on('window-all-closed', () => app.quit());
+
+// CI 검증용 임시 주석
