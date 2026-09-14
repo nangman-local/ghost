@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'" />
+  <title>GHOST overlay</title>
+  <style>
+    html, body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: transparent;
+      font-family: "Segoe UI", "Malgun Gothic", sans-serif;
+      user-select: none;
+    }
+
+    /* 임시 캐릭터: Rive 연동 전까지 CSS 유령 */
+    #character {
+      position: absolute;
+      width: 96px;
+      height: 112px;
+      cursor: grab;
+      touch-action: none;
+    }
+    #character.dragging { cursor: grabbing; }
+
+    #character .body {
+      position: absolute;
+      inset: 0;
+      background: #f5f3ff;
+      border: 3px solid #4c1d95;
+      border-radius: 48px 48px 14px 14px;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
+      animation: float 2.4s ease-in-out infinite;
+    }
+    #character.poked .body { animation: poke 0.4s ease-out; }
+
+    #character .eye {
+      position: absolute;
+      top: 38px;
+      width: 12px;
+      height: 18px;
+      background: #1e1b4b;
+      border-radius: 50%;
+    }
+    #character .eye.left { left: 26px; }
+    #character .eye.right { right: 26px; }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-6px); }
+    }
+    @keyframes poke {
+      0% { transform: scale(1); }
+      40% { transform: scale(1.15, 0.85); }
+      100% { transform: scale(1); }
+    }
+
+    /* 말풍선은 클릭 판정에서 제외 (pointer-events: none) */
+    #bubble {
+      position: absolute;
+      max-width: 320px;
+      padding: 8px 12px;
+      background: rgba(30, 27, 75, 0.92);
+      color: #fff;
+      border-radius: 10px;
+      font-size: 12px;
+      line-height: 1.4;
+      pointer-events: none;
+      word-break: break-all;
+    }
+    #bubble .app { font-weight: 700; color: #c4b5fd; }
+    #bubble .hint { margin-top: 4px; opacity: 0.6; font-size: 11px; }
+  </style>
+</head>
+<body>
+  <div id="bubble">
+    <div class="app" id="bubble-app">활성 창 감지 대기 중…</div>
+    <div id="bubble-title"></div>
+    <div class="hint">드래그: 이동 · 클릭: 반응 · 우클릭/Ctrl+Shift+Q: 종료</div>
+  </div>
+  <div id="character" title="GHOST">
+    <div class="body">
+      <div class="eye left"></div>
+      <div class="eye right"></div>
+    </div>
+  </div>
+  <script src="overlay.js"></script>
+</body>
+</html>

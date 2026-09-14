@@ -1,0 +1,21 @@
+{
+  "name": "ghost-desktop",
+  "version": "0.1.0",
+  "description": "GHOST Windows PC client (Electron) - spike: active window detection + floating character overlay",
+  "private": true,
+  "type": "module",
+  "main": "src/main/main.js",
+  "scripts": {
+    "start": "electron .",
+    "probe": "node scripts/probe-active-window.js"
+  },
+  "dependencies": {
+    "get-windows": "^9.3.0"
+  },
+  "devDependencies": {
+    "electron": "^44.3.0"
+  },
+  "allowScripts": {
+    "electron@44.3.0": true
+  }
+}
