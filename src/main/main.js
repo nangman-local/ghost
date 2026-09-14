@@ -1,5 +1,5 @@
 import { app, globalShortcut, ipcMain } from 'electron';
-import { createOverlayWindow } from './overlay.js';
+import { bringOverlayToTop, createOverlayWindow } from './overlay.js';
 import { watchActiveWindow } from './activeWindow.js';
 
 const QUIT_SHORTCUT = 'CommandOrControl+Shift+Q';
@@ -19,6 +19,7 @@ app.whenReady().then(() => {
       console.log(`[active] ${info.appName} | ${info.title}`);
       if (overlay && !overlay.isDestroyed()) {
         overlay.webContents.send('active-window:changed', info);
+        bringOverlayToTop(overlay);
       }
     },
   });

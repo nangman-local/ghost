@@ -32,11 +32,13 @@
 - 클릭 통과: 기본 `setIgnoreMouseEvents(true, {forward:true})`, 커서가 캐릭터 위일 때만 IPC로 `false`
 - 캐릭터 드래그(렌더러 내부 CSS 좌표 이동), 클릭 반응, 우클릭/`Ctrl+Shift+Q` 종료
 - 보안 기본값: `contextIsolation`, `sandbox`, `nodeIntegration: false`, CSP
+- **실기기 확인:** 화면에 캐릭터·말풍선 표시, Chrome/탐색기/캡처 도구/터미널 전환 감지 (`docs/images/` 스크린샷)
+- **topmost 가려짐 수정:** 다른 topmost 창(캡처 도구, PIP, 메신저 알림 등)이 나중에 올라오면 오버레이가 그 아래로 내려가 복구되지 않던 문제. `bringOverlayToTop()`(`setAlwaysOnTop` + `moveTop`)을 1초마다, 그리고 활성 창 변경 시 호출해서 해결. Win32 Z-order 조회로 재현했고, 수정 후 1초 안에 복구되며 포커스도 유지됨을 확인
 
 ### 미확인 (실기기 수동 검증 필요)
 README의 "수동 검증 체크리스트"를 참고하세요. 특히 아래 항목입니다.
-- 화면에 캐릭터가 실제로 보이는지 (GDI 스크린샷에는 투명 창이 찍히지 않아 자동 확인 불가)
 - 캐릭터 외 영역 클릭이 뒤쪽 앱으로 통과하는지
+- 실제 캡처 도구/PIP 사용 중 캐릭터가 다시 위로 올라오는지 (자동 테스트는 메모장을 topmost로 올려서 확인)
 - 캐릭터가 떠 있어도 입력 포커스가 유지되는지
 - 전체화면 앱, 배율 125%/150%, 다중 모니터
 
@@ -46,6 +48,8 @@ README의 "수동 검증 체크리스트"를 참고하세요. 특히 아래 항�
 - **창 제목이 계속 바뀌는 앱이 있다** (터미널 스피너 `◐/◑` 등). 판단 로직은 앱/제목이 N초(15~30초) 이상 유지될 때만 평가해야 함
 - get-windows는 N-API 프리빌드(`napi-9-win32-unknown-x64`)가 포함되어 있어 `@electron/rebuild`가 필요 없음. 바인딩 로드에 실패하면 **에러 없이 `undefined`를 반환**함
 - npm 11+의 `allowScripts` 때문에 Electron 바이너리 다운로드가 막힐 수 있음 → `package.json`에 허용 추가, 안 되면 `node node_modules/electron/install.js`
+- GDI 스크린샷(`CopyFromScreen`/`BitBlt`)에는 투명 오버레이가 찍히지 않음. 표시 여부를 자동으로 확인하려면 `webContents.capturePage()`나 Win32 Z-order 조회(`GetTopWindow`/`GetWindow`)를 사용
+- 셸 UI(시작 메뉴, Alt+Tab, 알림 센터), 독점 전체화면 게임, UAC 화면에는 가려지는 것이 정상 (OS 제약)
 - 테스트용 앱을 `Start-Process -WindowStyle Hidden`으로 실행하면 첫 show 호출이 숨김으로 바뀌므로 쓰지 말 것
 - 드래그에 `-webkit-app-region: drag`를 쓰지 않음 (클릭 통과와 충돌)
 - 오버레이를 전체 화면으로 만든 이유: 나중에 3단계(화면 일부 가리기) 개입이 필요하기 때문

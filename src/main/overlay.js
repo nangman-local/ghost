@@ -4,6 +4,15 @@ import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
+const TOPMOST_REASSERT_MS = 1000;
+
+/** 포커스를 뺏지 않고 오버레이를 topmost 그룹의 맨 위로 다시 올린다. */
+export function bringOverlayToTop(win) {
+  if (!win || win.isDestroyed() || !win.isVisible()) return;
+  win.setAlwaysOnTop(true, 'screen-saver');
+  win.moveTop();
+}
+
 /**
  * 주 모니터 작업 영역 전체를 덮는 투명·항상 위 창.
  * 기본은 클릭 통과(setIgnoreMouseEvents true + forward)이고,
@@ -65,7 +74,15 @@ export function createOverlayWindow() {
   screen.on('display-added', fitToWorkArea);
   screen.on('display-removed', fitToWorkArea);
 
+  // Windows에서는 topmost 창끼리 "나중에 올라온 창"이 위에 온다.
+  // 캡처 도구, PIP 영상, 메신저 알림 같은 다른 topmost 창에 가려질 수 있으므로 주기적으로 맨 위를 다시 확보한다.
+  win.on('always-on-top-changed', (_event, isOnTop) => {
+    if (!isOnTop) bringOverlayToTop(win);
+  });
+  const topmostTimer = setInterval(() => bringOverlayToTop(win), TOPMOST_REASSERT_MS);
+
   win.on('closed', () => {
+    clearInterval(topmostTimer);
     ipcMain.removeListener('overlay:set-interactive', onSetInteractive);
     screen.removeListener('display-metrics-changed', fitToWorkArea);
     screen.removeListener('display-added', fitToWorkArea);
