@@ -1,0 +1,89 @@
+{
+  "$comment": "딴짓 앱 규칙 사전 — 단일 진실의 원천. 로컬 1차 판단에 사용하며 AI 없이도 동작해야 한다. label: FOCUS | DISTRACT | AMBIGUOUS",
+  "version": 1,
+  "updatedAt": "2026-09-14",
+  "minHoldSeconds": 20,
+  "$minHoldSeconds_comment": "앱/제목이 이 시간 이상 유지될 때만 판정한다. 카카오톡 확인 같은 짧은 행동은 누적하지 않는다.",
+  "android": {
+    "DISTRACT": [
+      "com.instagram.android",
+      "com.zhiliaoapp.musically",
+      "com.google.android.youtube",
+      "com.twitter.android",
+      "com.facebook.katana",
+      "com.netflix.mediaclient",
+      "com.supercell.clashofclans",
+      "com.nexon.bluearchive"
+    ],
+    "FOCUS": [
+      "com.google.android.apps.docs.editors.docs",
+      "com.google.android.calendar",
+      "com.notion.id",
+      "com.microsoft.office.word",
+      "com.adobe.reader"
+    ],
+    "AMBIGUOUS": [
+      "com.android.chrome",
+      "com.google.android.gm",
+      "com.kakao.talk",
+      "com.discord",
+      "com.slack"
+    ]
+  },
+  "desktop": {
+    "$comment": "Windows에서는 브라우저 URL을 얻을 수 없다(get-windows의 url은 macOS 전용). 앱 이름과 창 제목만 사용한다.",
+    "DISTRACT": [
+      "Steam.exe",
+      "LeagueClient.exe",
+      "Discord.exe",
+      "KakaoTalk.exe"
+    ],
+    "FOCUS": [
+      "Code.exe",
+      "idea64.exe",
+      "studio64.exe",
+      "WINWORD.EXE",
+      "POWERPNT.EXE",
+      "Acrobat.exe"
+    ],
+    "AMBIGUOUS": [
+      "chrome.exe",
+      "msedge.exe",
+      "firefox.exe",
+      "explorer.exe",
+      "WindowsTerminal.exe"
+    ]
+  },
+  "domains": {
+    "$comment": "브라우저가 AMBIGUOUS일 때 도메인으로 2차 판단한다.",
+    "DISTRACT": [
+      "instagram.com",
+      "tiktok.com",
+      "twitter.com",
+      "x.com",
+      "netflix.com",
+      "twitch.tv",
+      "dcinside.com",
+      "fmkorea.com",
+      "ruliweb.com"
+    ],
+    "FOCUS": [
+      "docs.google.com",
+      "notion.so",
+      "github.com",
+      "stackoverflow.com",
+      "scholar.google.com",
+      "khu.ac.kr",
+      "developer.android.com",
+      "developer.mozilla.org"
+    ],
+    "AMBIGUOUS": [
+      "youtube.com",
+      "google.com",
+      "namu.wiki",
+      "reddit.com",
+      "velog.io",
+      "tistory.com"
+    ]
+  }
+}
