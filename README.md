@@ -62,13 +62,24 @@ npm의 `allowScripts` 정책 때문에 install 스크립트가 기본으로 막�
 src/
 ├── main/
 │   ├── main.js          진입점: 오버레이 생성, 감지 시작, 종료 단축키
-│   ├── activeWindow.js  get-windows 1초 폴링, 변경 시에만 콜백, 자기 프로세스 제외
-│   └── overlay.js       투명·항상 위·포커스 없음 창, 클릭 통과 토글 IPC
+│   ├── activeWindow.js  get-windows 1초 폴링, OS 무관 형태로 정규화, 변경 시에만 콜백, 자기 프로세스 제외
+│   ├── overlay.js       투명·항상 위·포커스 없음 창, 클릭 통과 토글 IPC
+│   └── platform/        OS별로 달라지는 값만 모음 (index.js가 process.platform으로 선택)
+│       ├── win32.js     검증 완료
+│       └── darwin.js    미검증 초안 (맥 스파이크용)
 ├── preload/preload.cjs  contextBridge로 window.ghost API만 노출
 └── renderer/
     ├── overlay.html     임시 CSS 캐릭터 + 말풍선
     └── overlay.js       캐릭터 위 판정, 드래그·클릭, 활성 창 표시
 ```
+
+### OS 분리 원칙 (Windows 우선, 맥 대비)
+
+- 공통 코드(`activeWindow.js`, `overlay.js`, 렌더러)에는 `process.platform` 분기를 두지 않습니다. OS마다 다른 값은 `platform/<os>.js`에 넣습니다.
+  - `activeWindowOptions`: get-windows 옵션 (맥 권한 프롬프트 제어)
+  - `overlay.alwaysOnTopLevel` / `visibleOnFullScreen` / `reassertTopMs`: 오버레이 창 레벨, 전체화면 Space 표시, topmost 재확보 주기
+- 활성 창 정보는 `{ appName, title, domain, path, processId, at }`로 정규화합니다. `domain`은 브라우저 URL을 얻을 수 있는 macOS에서만 채워지고 Windows에서는 항상 `null`입니다. 서버 정책에 따라 URL 경로·쿼리스트링은 버리고 호스트만 남깁니다.
+- 맥을 지원할 때는 `darwin.js`의 값을 실기기에서 검증하고 `verified: true`로 바꿉니다. 검증 전에는 실행 시 경고가 출력됩니다.
 
 ### 클릭 통과 방식
 

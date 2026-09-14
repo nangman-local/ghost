@@ -1,15 +1,16 @@
 import { BrowserWindow, ipcMain, screen } from 'electron';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { platform } from './platform/index.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-const TOPMOST_REASSERT_MS = 1000;
+const { alwaysOnTopLevel, visibleOnFullScreen, reassertTopMs } = platform.overlay;
 
 /** 포커스를 뺏지 않고 오버레이를 topmost 그룹의 맨 위로 다시 올린다. */
 export function bringOverlayToTop(win) {
   if (!win || win.isDestroyed() || !win.isVisible()) return;
-  win.setAlwaysOnTop(true, 'screen-saver');
+  win.setAlwaysOnTop(true, alwaysOnTopLevel);
   win.moveTop();
 }
 
@@ -47,9 +48,8 @@ export function createOverlayWindow() {
     },
   });
 
-  // 'screen-saver' 레벨: 일반 창과 최대화 창보다 위에 둔다
-  win.setAlwaysOnTop(true, 'screen-saver');
-  win.setVisibleOnAllWorkspaces(true);
+  win.setAlwaysOnTop(true, alwaysOnTopLevel);
+  win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen });
   win.setIgnoreMouseEvents(true, { forward: true });
 
   let interactive = false;
@@ -74,15 +74,13 @@ export function createOverlayWindow() {
   screen.on('display-added', fitToWorkArea);
   screen.on('display-removed', fitToWorkArea);
 
-  // Windows에서는 topmost 창끼리 "나중에 올라온 창"이 위에 온다.
-  // 캡처 도구, PIP 영상, 메신저 알림 같은 다른 topmost 창에 가려질 수 있으므로 주기적으로 맨 위를 다시 확보한다.
   win.on('always-on-top-changed', (_event, isOnTop) => {
     if (!isOnTop) bringOverlayToTop(win);
   });
-  const topmostTimer = setInterval(() => bringOverlayToTop(win), TOPMOST_REASSERT_MS);
+  const topmostTimer = reassertTopMs ? setInterval(() => bringOverlayToTop(win), reassertTopMs) : null;
 
   win.on('closed', () => {
-    clearInterval(topmostTimer);
+    if (topmostTimer) clearInterval(topmostTimer);
     ipcMain.removeListener('overlay:set-interactive', onSetInteractive);
     screen.removeListener('display-metrics-changed', fitToWorkArea);
     screen.removeListener('display-added', fitToWorkArea);

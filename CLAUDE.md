@@ -51,19 +51,22 @@
 - 테스트용 앱을 `Start-Process -WindowStyle Hidden`으로 실행하면 첫 show 호출이 숨김으로 바뀌므로 쓰지 말 것
 - 드래그에 `-webkit-app-region: drag`를 쓰지 않음 (클릭 통과와 충돌)
 - 오버레이를 전체 화면으로 만든 이유: 나중에 3단계(화면 일부 가리기) 개입이 필요하기 때문
+- **Windows 우선 개발, 맥은 나중에 지원 (2026-09-14 결정).** OS마다 달라지는 값은 `src/main/platform/{win32,darwin}.js`로만 분리하고 공통 코드에는 OS 분기를 넣지 않음. `darwin.js`는 미검증 초안(`verified: false`). get-windows 패키지에 macOS 프리빌드(arm64/x64)가 이미 포함되어 있음
+- 맥에서 예상되는 차이: 화면 기록 권한이 없으면 창 제목이 빈 문자열, 손쉬운 사용 권한이 없으면 URL이 없음. 전체화면 앱은 별도 Space라 `visibleOnFullScreen` 필요. 배포에는 코드서명·공증 필요
 
 ## 코드 지도
 
 | 파일 | 역할 |
 | --- | --- |
 | `src/main/main.js` | 진입점. 오버레이 생성, 감지 시작, 종료 단축키, 단일 인스턴스 |
-| `src/main/activeWindow.js` | `watchActiveWindow({ onChange })`: 폴링·중복 제거·자기 PID 제외 |
+| `src/main/activeWindow.js` | `readActiveWindow()`: OS 무관 정규화, `watchActiveWindow({ onChange })`: 폴링·중복 제거·자기 PID 제외 |
 | `src/main/overlay.js` | `createOverlayWindow()`: 투명 창, `overlay:set-interactive` IPC, 디스플레이 변경 대응 |
+| `src/main/platform/` | OS별 설정 (`win32.js` 검증 완료, `darwin.js` 미검증). `index.js`가 `process.platform`으로 선택 |
 | `src/preload/preload.cjs` | `window.ghost.{setInteractive, quit, onActiveWindowChanged}` |
 | `src/renderer/overlay.{html,js}` | 캐릭터·말풍선 UI, 캐릭터 위 판정, 드래그 |
 | `scripts/probe-active-window.js` | Electron 없이 get-windows만 테스트 (`npm run probe`) |
 
-IPC 채널: `overlay:set-interactive`(renderer→main), `app:quit`(renderer→main), `active-window:changed`(main→renderer, `{appName, title, path, processId, at}`)
+IPC 채널: `overlay:set-interactive`(renderer→main), `app:quit`(renderer→main), `active-window:changed`(main→renderer, `{appName, title, domain, path, processId, at}`, `domain`은 macOS만 값이 있고 Windows는 `null`)
 
 ## 다음 할 일 (우선순위 순)
 
@@ -76,6 +79,7 @@ IPC 채널: `overlay:set-interactive`(renderer→main), `app:quit`(renderer→ma
 7. [ ] Rive 캐릭터 연동 (`@rive-app/canvas`, 클릭 판정은 경계 박스 또는 알파 샘플링)
 8. [ ] 설정 창·할 일 선택·"할 일 관련이야" 교정 UI (호연 님 디자인)
 9. [ ] electron-builder로 Windows 설치 파일 만들기
+10. [ ] (나중에) 맥 스파이크: Mac 실기기에서 `darwin.js` 값 검증, 권한 안내 온보딩, 코드서명·공증
 
 ## 개발 환경
 
