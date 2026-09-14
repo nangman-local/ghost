@@ -39,8 +39,11 @@ jobs:
           #
           # 들여쓰기를 허용하지 않는 이유: 템플릿 주석 안의 "예시"를 들여쓰기로
           # 무력화하려면, 정규식이 줄 맨 앞(공백 0개)만 인정해야 한다.
-          if printf '%s' "$BODY" | grep -qE '^NO-DOCS-NEEDED:[[:space:]]*\S'; then
-            REASON=$(printf '%s' "$BODY" | grep -oE 'NO-DOCS-NEEDED:.*' | head -1)
+          # 코드블록(``` ... ```) 안은 제외한다. 그러지 않으면 이 규칙을 문서화하는
+          # PR이 예시 줄만으로 스스로 면제되어 버린다. 실제로 그렇게 당했다.
+          BODY_NO_CODE=$(printf '%s' "$BODY" | awk '/^[[:space:]]*```/{inb=!inb; next} !inb')
+          if printf '%s' "$BODY_NO_CODE" | grep -qE '^NO-DOCS-NEEDED:[[:space:]]*[^<[:space:]]'; then
+            REASON=$(printf '%s' "$BODY_NO_CODE" | grep -oE '^NO-DOCS-NEEDED:.*' | head -1)
             echo "면제 선언이 있어 통과합니다 — \`$REASON\`" >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
