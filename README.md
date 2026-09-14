@@ -41,7 +41,36 @@ npm의 `allowScripts` 정책 때문에 install 스크립트가 기본으로 막�
 - `electron`: 바이너리를 다운로드하는 스크립트가 필요합니다. `package.json`의 `allowScripts`에 허용해 두었습니다. 그래도 `node_modules/electron/dist/electron.exe`가 없으면 `node node_modules/electron/install.js`를 실행하세요.
 - `get-windows`: Windows x64용 N-API 프리빌드(`lib/binding/napi-9-win32-unknown-x64`)가 패키지에 포함되어 있어 빌드 스크립트가 필요 없습니다. N-API라서 Electron용으로 다시 빌드하지 않아도 로드됩니다.
 
-## `npm start`가 안 될 때
+### macOS에서 실행 (미검증)
+
+> 아직 Mac 실기기에서 한 번도 실행해 보지 않았습니다. 아래는 예상 절차이며, 맥 스파이크에서 확인한 뒤 확정합니다. 확인한 내용은 이 섹션과 `src/main/platform/darwin.js`에 반영해 주세요.
+
+요구 사항: macOS (Apple Silicon 또는 Intel), Node.js 24 이상. get-windows 패키지에 macOS 프리빌드(`napi-9-darwin-unknown-arm64`, `napi-6-darwin-unknown-x64`)가 들어 있어 따로 빌드할 필요는 없을 것으로 보입니다.
+
+```bash
+npm install
+npm start
+```
+
+- 실행하면 터미널에 `[ghost] darwin은 아직 실기기 검증 전입니다` 경고가 출력됩니다. 정상입니다.
+- **권한:** 처음 실행하면 **화면 기록**, **손쉬운 사용** 권한을 요청합니다. `시스템 설정 → 개인정보 보호 및 보안`에서 허용한 뒤 **앱을 완전히 종료하고 다시 실행**하세요.
+  - 화면 기록 권한이 없으면 창 제목이 빈 문자열로 옵니다.
+  - 손쉬운 사용 권한이 없으면 브라우저 URL(`domain`)이 오지 않습니다.
+  - `npm start`로 실행하면 권한 목록에 Electron이 아니라 **터미널 앱(Terminal, iTerm, VS Code 등)**이 표시될 수 있습니다. 그 경우 터미널 앱에 권한을 주세요.
+- **종료:** 캐릭터 우클릭. 단축키는 `Cmd+Shift+Q`인데 macOS 로그아웃 단축키와 같아서 충돌할 수 있습니다. 확인 전에는 우클릭으로 종료하세요.
+- get-windows만 따로 확인: `npm run probe`. 이때도 권한은 터미널 앱에 요청됩니다.
+- 설치 파일로 배포하려면 Apple 코드서명과 공증이 필요합니다. 개발 중 `npm start` 실행에는 필요 없습니다.
+
+맥에서 확인할 항목:
+
+- [ ] 캐릭터·말풍선이 보이고, 캐릭터 밖을 클릭하면 뒤쪽 앱이 반응한다
+- [ ] 앱 전환 시 앱 이름·제목이 출력되고, 브라우저에서는 `domain`이 채워진다
+- [ ] 다른 앱을 전체화면(별도 Space)으로 전환해도 캐릭터가 보인다
+- [ ] 다른 항상 위 창(PIP 등)을 띄웠다 닫은 뒤에도 캐릭터가 맨 위에 있다. 안 되면 `darwin.js`의 `reassertTopMs` 설정
+- [ ] 다른 앱에서 타이핑할 때 포커스를 뺏지 않는다
+- [ ] `Cmd+Shift+Q` 동작 여부
+
+## `npm start`가 안 될 때 (Windows)
 
 반드시 `package.json`이 있는 이 폴더(저장소 루트)에서 실행하세요. 경로에 공백이 있으면 `cd "C:\경로\2026-2 yeso\desktop"`처럼 따옴표로 감싸야 합니다.
 
