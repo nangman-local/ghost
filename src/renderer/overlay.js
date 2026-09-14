@@ -5,6 +5,7 @@ const bubbleTitle = document.getElementById('bubble-title');
 
 const MARGIN = 24;
 const DRAG_THRESHOLD_PX = 4;
+const SOLID_HOLD_MS = 1500;
 
 // ---- 위치 ----
 let pos = {
@@ -55,9 +56,24 @@ document.addEventListener('mouseleave', () => {
   if (!dragging) setInteractive(false);
 });
 
+// ---- 투명도 ----
+// 평소에는 반투명, 누르는 동안과 놓은 뒤 잠깐은 불투명하게 보인다.
+let solidTimer = null;
+
+function showSolid() {
+  clearTimeout(solidTimer);
+  character.classList.add('solid');
+}
+
+function releaseSolid() {
+  clearTimeout(solidTimer);
+  solidTimer = setTimeout(() => character.classList.remove('solid'), SOLID_HOLD_MS);
+}
+
 // ---- 드래그 / 클릭 ----
 character.addEventListener('pointerdown', (e) => {
   if (e.button !== 0) return;
+  showSolid();
   character.setPointerCapture(e.pointerId);
   dragging = { startX: e.clientX, startY: e.clientY, originX: pos.x, originY: pos.y, moved: false };
 });
@@ -79,6 +95,7 @@ function endDrag(e) {
   const wasClick = !dragging.moved;
   dragging = null;
   character.classList.remove('dragging');
+  releaseSolid();
   if (wasClick && e.type === 'pointerup') poke();
   // 드래그가 끝난 지점이 캐릭터 밖이면 다시 클릭 통과로
   const under = document.elementFromPoint(e.clientX, e.clientY);

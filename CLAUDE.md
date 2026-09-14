@@ -31,6 +31,7 @@
 - 임시 CSS 유령 캐릭터 + 활성 창 말풍선. 렌더러가 정상적으로 그리는 것은 `capturePage`로 확인
 - 클릭 통과: 기본 `setIgnoreMouseEvents(true, {forward:true})`, 커서가 캐릭터 위일 때만 IPC로 `false`
 - 캐릭터 드래그(렌더러 내부 CSS 좌표 이동), 클릭 반응, 우클릭/`Ctrl+Shift+Q` 종료
+- 캐릭터 기본 투명도 70%, 누르는 동안(클릭·드래그)과 놓은 뒤 1.5초는 100% (`overlay.html`의 `.solid`, `overlay.js`의 `SOLID_HOLD_MS`). 설정 UI는 아직 없음
 - 보안 기본값: `contextIsolation`, `sandbox`, `nodeIntegration: false`, CSP
 - **실기기 확인:** 화면에 캐릭터·말풍선 표시, Chrome/탐색기/캡처 도구/터미널 전환 감지 (`docs/images/` 스크린샷)
 - **topmost 가려짐 수정:** 다른 topmost 창(캡처 도구, PIP, 메신저 알림 등)이 나중에 올라오면 오버레이가 그 아래로 내려가 복구되지 않던 문제. `bringOverlayToTop()`(`setAlwaysOnTop` + `moveTop`)을 1초마다, 그리고 활성 창 변경 시 호출해서 해결. Win32 Z-order 조회로 재현했고, 수정 후 1초 안에 복구되며 포커스도 유지됨을 확인
