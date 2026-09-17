@@ -9,43 +9,95 @@
 
 ## 세션
 
+W0 세션 API 입출력 초안. **서버 세션이 진실의 원천이다.**
+하나의 할 일을 수행하는 Session에 PC와 Android가 동시에 연결될 수 있으며, `state`, `distractSeconds`, `interventionLevel`은 기기별로 관리한다. 단일 `activeDevice`는 사용하지 않는다.
+
 ### `GET /sessions/current`
 
-현재 활성 세션. **서버 세션이 진실의 원천이다.**
+현재 활성 세션 조회. 응답: 아래 전체 세션 객체.
 
 ```json
 {
   "sessionId": "s_123",
   "userId": "u_1",
-  "task": { "id": "t_9", "title": "자료구조 과제", "source": "CALENDAR" },
-  "state": "FOCUS",
-  "activeDevice": "PC",
+  "task": {
+    "id": "t_9",
+    "title": "자료구조 과제",
+    "source": "CALENDAR"
+  },
+  "startedAt": "2026-10-01T20:00:00+09:00",
+  "endedAt": null,
   "devices": [
-    { "type": "PC", "lastHeartbeat": "2026-10-01T20:15:30+09:00" },
-    { "type": "ANDROID", "lastHeartbeat": "2026-10-01T20:15:12+09:00" }
-  ],
-  "interventionLevel": 0,
-  "distractSeconds": 0
+    {
+      "deviceId": "pc_1",
+      "type": "PC",
+      "state": "FOCUS",
+      "distractSeconds": 0,
+      "interventionLevel": 0,
+      "stateChangedAt": "2026-10-01T20:00:00+09:00",
+      "lastHeartbeatAt": "2026-10-01T20:15:30+09:00"
+    },
+    {
+      "deviceId": "android_1",
+      "type": "ANDROID",
+      "state": "DISTRACT",
+      "distractSeconds": 120,
+      "interventionLevel": 0,
+      "stateChangedAt": "2026-10-01T20:13:12+09:00",
+      "lastHeartbeatAt": "2026-10-01T20:15:12+09:00"
+    }
+  ]
 }
 ```
 
-`task.source`: `CALENDAR` · `NOTION` · `MANUAL`
+- `task.source`: `CALENDAR` · `NOTION` · `MANUAL`
+- 기기 `state`: `WAITING` · `FOCUS` · `DISTRACT`. `interventionLevel`은 0~3이며 [`states.md`](./states.md)의 정의와 제약을 따른다.
+- 기기 종류(`type`, 요청의 `deviceType`): `PC` · `ANDROID`
+- `endedAt`이 `null`이면 진행 중, 시각이 있으면 종료다.
 
 ### `POST /sessions` — 세션 시작
 
-요청 `{ "taskId": "t_9", "device": "ANDROID" }` → 응답: 위 세션 객체
+할 일을 시작하고 최초 기기를 세션에 연결한다.
 
-### `POST /sessions/{id}/end` — 세션 종료
+요청
+
+```json
+{
+  "taskId": "t_9",
+  "deviceId": "pc_1",
+  "deviceType": "PC"
+}
+```
+
+응답: 위 전체 세션 객체.
 
 ### `POST /sessions/{id}/heartbeat` — 하트비트 (30초 주기)
 
+각 기기가 30초마다 자신의 현재 상태를 전송한다.
+
+요청
+
 ```json
-{ "device": "ANDROID", "app": "com.instagram.android", "domain": null, "title": null }
+{
+  "deviceId": "android_1",
+  "state": "DISTRACT",
+  "distractSeconds": 120,
+  "interventionLevel": 0,
+  "app": "com.instagram.android",
+  "domain": null,
+  "title": null
+}
 ```
 
-응답: 위 세션 객체. 끊기면 해당 기기를 비활성으로 처리한다.
+응답: 위 전체 세션 객체.
 
-**`domain`과 `title`만 보낸다. URL 쿼리스트링과 화면 텍스트는 보내지 않는다.**
+`stateChangedAt`과 `lastHeartbeatAt`은 서버 기준 시각으로 관리한다.
+
+`app` 식별자는 전송할 수 있다. 브라우징 정보는 **`domain`과 `title`만 전송하며, URL 쿼리스트링과 화면 텍스트는 보내지 않는다.**
+
+### `POST /sessions/{id}/end` — 세션 종료
+
+세션을 종료하고 `endedAt`을 설정한다. 응답: 위 전체 세션 객체.
 
 ## 할 일
 
@@ -92,3 +144,5 @@ PC 클라이언트용. 서버 → 클라이언트 푸시.
 { "type": "SESSION_UPDATED", "payload": { } }
 { "type": "INTERVENTION", "payload": { "level": 2, "message": "자료구조 과제 하던 중이었어" } }
 ```
+
+진행 중인 세션에 다른 기기가 최초 연결되는 방식은 구현 전 합의한다.
