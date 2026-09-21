@@ -6,6 +6,7 @@
 - 인증: `Authorization: Bearer <accessToken>`
 - 시각: ISO 8601 + 오프셋 (`2026-10-01T20:15:30+09:00`)
 - 에러: `{ "error": { "code": "STRING_CODE", "message": "사람이 읽을 설명" } }`
+- 감지하지 못한 신호는 `null`로 보낸다. 빈 문자열이나 `"미감지"` 같은 문자열을 쓰지 않는다.
 
 ## 세션
 
@@ -104,11 +105,32 @@ W0 세션 API 입출력 초안. **서버 세션이 진실의 원천이다.**
 - `GET /tasks` — 목록
 - `POST /tasks` — 생성. 등록 시 LLM 1회 호출로 "할 일 프로필"을 생성한다 (실시간 아님)
 - `PATCH /tasks/{id}` — 수정
-- `POST /tasks/{id}/allowlist` — 사용자 교정. `{ "app": "com.google.chrome", "domain": "docs.google.com" }` 을 즉시 허용 목록에 반영
+- `POST /tasks/{id}/allowlist` — 사용자 교정. `{ "app": "com.android.chrome", "domain": "docs.google.com" }` 을 즉시 허용 목록에 반영
+
+### 할 일 프로필
+
+`POST /tasks` 시 LLM을 1회 호출해 생성하고 저장한다. 판단할 때마다 호출하지 않는다.
+`/judge`의 판단 기준이자, 로컬 규칙 판단의 2차 기준으로도 쓴다.
+
+```json
+{
+  "taskId": "t_9",
+  "allowDomains": ["docs.spring.io", "stackoverflow.com", "github.com"],
+  "relatedKeywords": ["spring", "security", "jpa", "gradle", "java"],
+  "blockCategories": ["SHORT_FORM", "GAME", "SOCIAL"],
+  "youtubePolicy": "KEYWORD_ONLY"
+}
+```
+
+- `allowDomains`: 이 할 일 동안 `FOCUS`로 간주할 도메인. [`distract-rules.json`](./distract-rules.json)의 전역 분류보다 우선한다.
+- `relatedKeywords`: 제목 매칭용. `/judge`가 관련성 판단에 사용한다.
+- `blockCategories`: 이 할 일 동안 `DISTRACT`로 간주할 카테고리.
+- `youtubePolicy`: `KEYWORD_ONLY`(제목에 관련 키워드가 있을 때만 허용) · `ALLOW` · `BLOCK`
+- 사용자 교정(`POST /tasks/{id}/allowlist`)은 해당 할 일의 `allowDomains`에 즉시 반영한다.
 
 ## 딴짓 판단 `POST /judge`
 
-로컬 규칙이 `AMBIGUOUS`일 때만 호출한다. 앱/제목이 15~30초 이상 유지될 때만.
+로컬 규칙이 `AMBIGUOUS`일 때만 호출한다. 호출 조건(유지 시간)은 [`distract-rules.json`](./distract-rules.json)의 `minHoldSeconds`를 따른다. 이 값을 다른 곳에 중복해서 적지 않는다.
 
 요청
 
@@ -122,6 +144,9 @@ W0 세션 API 입출력 초안. **서버 세션이 진실의 원천이다.**
 }
 ```
 
+- 할 일 프로필은 서버가 `sessionId`로 조회해 사용한다. 클라이언트가 보내지 않는다.
+- 감지하지 못한 신호는 `null`로 보낸다. Windows는 브라우저 URL을 얻을 수 없어 `domain`이 항상 `null`이다(`get-windows`의 url은 macOS 전용).
+
 응답
 
 ```json
@@ -130,7 +155,31 @@ W0 세션 API 입출력 초안. **서버 세션이 진실의 원천이다.**
 
 `label`: `FOCUS` · `DISTRACT` · `AMBIGUOUS` — `confidence`: `0.0`~`1.0`
 
-**서버가 실패하거나 오프라인이면 클라이언트는 로컬 규칙만으로 판단하고, 모호하면 개입하지 않는다.**
+### 신호별 confidence 상한
+
+서버가 보장한다. 신호가 부족할수록 단정하지 않는다.
+
+| 가용 신호 | confidence 상한 |
+| --- | --- |
+| `domain` + `title` | 제한 없음 |
+| `title`만 | 0.7 |
+| `app`만 | `/judge`를 호출하지 않는다 (`AMBIGUOUS` 유지) |
+
+개입 3단계 허용 임계값과 맞물려 동작한다. 임계값 정의는 [`states.md`](./states.md)를 따른다.
+
+### 캐시
+
+키는 `(taskId, app, domain, title)`이다. 같은 할 일이라도 다른 할 일에는 재사용하지 않는다.
+캐시에서 응답하면 `cached: true`를 반환한다.
+
+### 실패 시 동작
+
+두 경우를 구분한다.
+
+- **LLM 호출 실패 (서버는 정상):** `200`으로 `{ "label": "AMBIGUOUS", "confidence": 0.0, "cached": false }`를 반환한다. 5xx로 클라이언트를 막지 않는다.
+- **서버 자체가 응답하지 않거나 오프라인:** 클라이언트는 로컬 규칙만으로 판단한다.
+
+**두 경우 모두 결과가 `AMBIGUOUS`면 개입하지 않는다.** 개입하지 않는 것이 올바른 실패 동작이다.
 
 ## 이벤트 `POST /events`
 
