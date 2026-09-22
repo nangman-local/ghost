@@ -37,6 +37,8 @@ dependencies {
     debugImplementation("androidx.compose.ui:ui-tooling")
     implementation("androidx.core:core-ktx:1.16.0")
     testImplementation("junit:junit:4.13.2")
+    // 앱이 쓰는 kotlinx-coroutines(1.7.3)와 버전을 맞춘다.
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
     androidTestImplementation("androidx.test:runner:1.6.2")
     androidTestImplementation("androidx.test.ext:junit:1.2.1")
 }

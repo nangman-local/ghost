@@ -2,6 +2,7 @@ package com.ghost.prototype
 
 import android.app.Application
 import com.ghost.prototype.contract.FocusController
+import com.ghost.prototype.contract.Permission
 import com.ghost.prototype.contract.PermissionStatus
 import com.ghost.prototype.contract.TaskRepository
 import com.ghost.prototype.fake.FakeFocusController
@@ -19,7 +20,15 @@ class GhostApplication : Application() {
 
     // UI ↔ 코어 ↔ 서버 연결 지점. Fake를 실제 구현으로 바꿀 때는 여기만 고친다.
     private val appScope = MainScope()
-    val focusController: FocusController by lazy { FakeFocusController(floatingLauncher, floatingState.state, appScope) }
-    val taskRepository: TaskRepository by lazy { FakeTaskRepository() }
     val permissionStatus: PermissionStatus by lazy { AndroidPermissionStatus(this) }
+    val taskRepository: TaskRepository by lazy { FakeTaskRepository() }
+    val focusController: FocusController by lazy {
+        FakeFocusController(
+            startFloating = floatingLauncher::start,
+            stopFloating = floatingLauncher::stop,
+            floating = floatingState.state,
+            overlayGranted = { permissionStatus.isGranted(Permission.OVERLAY) },
+            scope = appScope,
+        )
+    }
 }

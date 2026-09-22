@@ -58,6 +58,8 @@ UI(화면)·코어(감지·오버레이·상태머신)·서버 연동을 서로 
   - Fake를 실제 구현으로 바꿀 때는 `GhostApplication`의 연결부만 고친다.
   - contract를 바꾸면 `shared/`처럼 팀 공유 채널에 공지한다. 세 담당이 같이 쓰는 경계다.
 - `FakeFocusController`는 세션 상태를 메모리에만 두고 기존 플로팅 시작·종료만 호출한다. **세션·상태머신·서버 연결은 코어 오너 TODO다.**
+- **실패는 문구가 아니라 종류(`FocusError`)로 전달한다.** 화면 문구·버튼은 UI가 종류별로 정한다. 코어의 `FloatingState.error`는 아직 문자열이라, 지금은 Fake가 오버레이 권한 여부로 종류를 가른다. 코어가 오류 종류를 직접 내보내면 이 판단은 없앤다.
+- **contract 규격 테스트:** `test/.../contract/FocusControllerContract`·`TaskRepositoryContract`에 모든 구현이 지켜야 할 동작이 있다. 실제 구현을 만들면 이 클래스를 상속한 테스트로 자기 구현을 돌린다(예: `FakeFocusControllerTest`). 테스트는 각자 맡은 코드의 담당이 쓴다.
 - 접근성 허용 여부는 `AccessibilityManager`의 활성 서비스 목록으로 본다. 서비스 연결 여부(`chromeConnected`)는 프로세스 메모리 값이라 권한 판정에 쓰지 않는다.
 - 라우트는 문자열로 둔다(타입 세이프 라우트는 serialization 플러그인이 필요하다).
 - 테마 토큰(`ui/theme/`)은 Figma "UI" 페이지(node `1:125`)의 raw 값에서 추출했다. Figma 변수는 heading 크기·행간뿐이다.
