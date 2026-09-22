@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Figma 나의 기록 딴짓 시간 warning_amber (node 56:569). 색은 Icon tint로 준다. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="18dp"
+    android:height="18dp"
+    android:viewportWidth="18"
+    android:viewportHeight="18">
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M9 4.12031L14.6475 13.8778H3.3525L9 4.12031ZM2.055 13.1278C1.4775 14.1253 2.1975 15.3778 3.3525 15.3778H14.6475C15.8025 15.3778 16.5225 14.1253 15.945 13.1278L10.2975 3.37031C9.72 2.37281 8.28 2.37281 7.7025 3.37031L2.055 13.1278ZM8.25 7.87781V9.37781C8.25 9.79031 8.5875 10.1278 9 10.1278C9.4125 10.1278 9.75 9.79031 9.75 9.37781V7.87781C9.75 7.46531 9.4125 7.12781 9 7.12781C8.5875 7.12781 8.25 7.46531 8.25 7.87781ZM8.25 11.6278H9.75V13.1278H8.25V11.6278Z" />
+</vector>
