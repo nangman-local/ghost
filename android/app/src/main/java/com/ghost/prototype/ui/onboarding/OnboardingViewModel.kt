@@ -14,8 +14,11 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 
 data class OnboardingUiState(
-    val step: OnboardingStep = OnboardingStep.WELCOME,
+    val step: OnboardingStep = OnboardingSteps.WELCOME,
     val canGoBack: Boolean = false,
+    /** 인디케이터 위치. 권한 없는 안내 단계는 -1(인디케이터를 숨긴다). */
+    val indicatorIndex: Int = -1,
+    val indicatorCount: Int = 0,
     val finished: Boolean = false,
     val error: String? = null,
 )
@@ -28,25 +31,22 @@ class OnboardingPrefs(context: Context) {
         get() = prefs.getBoolean("onboarding_done", false)
         set(value) = prefs.edit { putBoolean("onboarding_done", value) }
 
-    /** 알림 권한 팝업을 한 번이라도 띄웠는지. 거부가 굳었는지 판단할 때 쓴다. */
-    var notificationAsked: Boolean
-        get() = prefs.getBoolean("notification_asked", false)
-        set(value) = prefs.edit { putBoolean("notification_asked", value) }
+    /** 런타임 권한 팝업을 한 번이라도 띄웠는지. 거부가 굳었는지 판단할 때 쓴다. */
+    fun wasAsked(permission: String): Boolean = prefs.getBoolean("asked:$permission", false)
+
+    fun markAsked(permission: String) = prefs.edit { putBoolean("asked:$permission", true) }
 }
 
 class OnboardingViewModel(application: Application, private val saved: SavedStateHandle) :
     AndroidViewModel(application) {
     private val app = application as GhostApplication
     val prefs = OnboardingPrefs(application)
-    private val flow = OnboardingFlow(
-        isGranted = app.permissionStatus::isGranted,
-        notificationsRequestable = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU,
-    )
+    private val flow = OnboardingFlow(OnboardingSteps.all, app.permissionStatus::isGranted, Build.VERSION.SDK_INT)
     private val mutableState = MutableStateFlow(stateFor(restoredStep()))
     val state: StateFlow<OnboardingUiState> = mutableState.asStateFlow()
 
-    /** 시작 화면의 "Ghost 시작하기". */
-    fun start() = moveTo(flow.next(OnboardingStep.WELCOME))
+    /** 안내 단계의 버튼(예: "Ghost 시작하기"): 다음 단계로 간다. */
+    fun next() = moveTo(flow.next(state.value.step))
 
     /** "나중에": 권한 없이 다음 단계로 간다. */
     fun skip() = moveTo(flow.next(state.value.step))
@@ -68,15 +68,18 @@ class OnboardingViewModel(application: Application, private val saved: SavedStat
             mutableState.update { it.copy(finished = true) }
             return
         }
-        saved[KEY_STEP] = step.name
+        saved[KEY_STEP] = step.key
         mutableState.value = stateFor(step)
     }
 
-    private fun stateFor(step: OnboardingStep) =
-        OnboardingUiState(step = step, canGoBack = flow.previous(step) != null)
+    private fun stateFor(step: OnboardingStep) = OnboardingUiState(
+        step = step,
+        canGoBack = flow.previous(step) != null,
+        indicatorIndex = flow.indicatorIndex(step),
+        indicatorCount = flow.indicatorCount,
+    )
 
-    private fun restoredStep() =
-        saved.get<String>(KEY_STEP)?.let(OnboardingStep::valueOf) ?: OnboardingStep.WELCOME
+    private fun restoredStep() = flow.stepFor(saved.get<String>(KEY_STEP)) ?: flow.first
 
     private companion object {
         const val KEY_STEP = "onboarding_step"
