@@ -63,14 +63,41 @@ UI(화면)·코어(감지·오버레이·상태머신)·서버 연동을 서로 
 - 접근성 허용 여부는 `AccessibilityManager`의 활성 서비스 목록으로 본다. 서비스 연결 여부(`chromeConnected`)는 프로세스 메모리 값이라 권한 판정에 쓰지 않는다.
 - 라우트는 문자열로 둔다(타입 세이프 라우트는 serialization 플러그인이 필요하다).
 - 테마 토큰(`ui/theme/`)은 Figma "UI" 페이지(node `1:125`)의 raw 값에서 추출했다. Figma 변수는 heading 크기·행간뿐이다.
+- **다크 전용**이다. 창 배경(`@color/ghost_background`)을 Compose 배경과 맞춰 시작 시 흰 화면이 번쩍이지 않게 한다.
+- 폰트는 Pretendard 1.3.9 OTF 4종(Light·Regular·SemiBold·Bold, SIL OFL — `third_party/pretendard/LICENSE.txt`). Android용 서브셋 OTF는 배포되지 않아 전체본이다(약 6.3MB).
+
+### Figma → Compose 레이아웃 규칙
+
+Figma 시안은 360×760 한 화면 기준 절대 좌표다. 그대로 옮기면 실기기에서 깨지므로 **좌표는 버리고 구조만 따른다.**
+
+- 화면은 `[상단] → [가운데: 그림 영역 weight] → [하단 고정: 인디케이터·버튼]`. 공간이 모자라면 그림이 먼저 줄고(최소 120dp), 그래도 모자라면 가운데가 스크롤된다. 하단 CTA는 항상 보인다.
+- 카드·버튼은 `fillMaxWidth` + 좌우 20dp. 콘텐츠 폭은 최대 480dp로 가운데 정렬한다(폴드·태블릿).
+- 버튼에 Figma의 고정 좌우 padding(132)을 쓰지 않는다. 글자는 sp, 14.25는 14sp로 반올림, 줄바꿈 허용.
+- 상태바·내비게이션 바 목업은 그리지 않고 `safeDrawingPadding`으로 처리한다.
+- 가로 모드는 지원하지 않는다(`screenOrientation="portrait"`). Android 16+ 큰 화면에서는 시스템이 이를 무시하므로 레이아웃은 가로에서도 동작해야 한다.
+- Preview로 360×640(글자 1.3·1.5배), 360×780, 411×891, 673×841을 확인한다.
+
+### 캐릭터 이미지 (Rive 전 임시)
+
+- `ui/component/GhostIllustration`이 포즈(`GhostPose`)별 PNG를 그린다. **Rive(`.riv`)가 나오면 이 Composable 안만 교체한다.**
+- PNG는 Figma에서 글로우 포함 3x로 내보냈고 배경색 `#040309`가 들어 있다. 다른 배경 위에 올리지 않는다.
+- 온보딩 2번 그림(`onboarding_overlay.png`)에는 제조사 배경화면이 들어 있다. 공개 배포 전 디자인팀이 교체해야 한다.
 
 ## 권한
 
 사용 정보 접근(`UsageStatsManager`)과 접근성(`AccessibilityService`)은 **사용자가 시스템 설정에서 직접 허용한다.** 권한 없이도 플로팅은 동작해야 한다.
 
 - 권한 철회/창 연결 실패 시 서비스를 정리하고 앱에 오류를 표시한다. **자동 재시도하지 않는다.**
+- **온보딩(`ui/onboarding/`)**: 시작 → 다른 앱 위에 표시 → Chrome 접근성 → 사용 정보 접근 → 알림(API 33+).
+  - 모든 권한 단계에 "나중에"가 있다. 이미 허용된 단계는 건너뛰고, 설정에서 돌아왔을 때(onResume) 허용됐으면 다음 단계로 간다.
+  - 첫 실행 때 한 번만 보여준다(SharedPreferences `ghost_ui/onboarding_done`). 서버 세션과 무관한 UI 플래그다.
+  - 오버레이를 건너뛰면 플로팅은 뜨지 않는다. "권한 없이도 동작"이 보장되는 건 사용 정보·접근성뿐이다.
+  - **단계는 표 하나(`OnboardingSteps.all`)로 정의한다.** 단계마다 문구·그림·권한·받는 방법(`GrantMethod`: 설정 화면 열기 / 런타임 팝업)을 한곳에 둔다. 새 권한 단계(예: 배터리 최적화 예외)는 `contract/Permission` 값 + `AndroidPermissionStatus` 확인 + 표 한 줄 + 문자열만 추가한다. 인디케이터·건너뛰기·자동 진행·뒤로가기는 `OnboardingFlow`가 맞춘다.
+  - 런타임 권한 단계는 `minSdk` 미만 기기에서 없어진다(알림은 API 33). 인디케이터 개수도 따라 줄어든다.
+- **알림 권한(`POST_NOTIFICATIONS`)을 매니페스트에 선언하고 온보딩에서 런타임 요청한다.** 이 권한이 허용되면 `FloatingService`의 FGS 알림이 실제로 표시된다(선언 전에는 Android 13+에서 숨겨졌다).
+  - 두 번 거부해 팝업이 더 뜨지 않으면(`shouldShowRequestPermissionRationale == false`) 앱 알림 설정을 연다.
+- **Play 정책:** 접근성·사용 정보 접근은 요청 **전에** 무엇을 읽고 무엇을 읽지 않는지 눈에 띄게 고지해야 한다. 지금 온보딩 문구는 Figma를 따른 것이라 이 요구를 충족하지 않는다. 공개 배포 전 #23에서 문구를 확정한다. 상세 고지는 더보기 > 개발자 도구에 남아 있다.
 - `START_NOT_STICKY`. 부팅 수신자·자동 복구 없음.
-- Android 13+ 알림 권한은 시스템 설정에 따른다.
 
 ## 오버레이 규칙
 
