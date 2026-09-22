@@ -14,14 +14,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -83,37 +81,35 @@ fun DeveloperToolsScreen(
     openUsageSettings: () -> Unit,
     openAccessibilitySettings: () -> Unit,
 ) {
-    MaterialTheme(colorScheme = lightColorScheme(primary = Color(0xFF6354B5))) {
-        Surface(modifier = Modifier.fillMaxSize()) {
-            Column(
-                modifier = Modifier.safeDrawingPadding().verticalScroll(rememberScrollState()).padding(24.dp),
-                verticalArrangement = Arrangement.spacedBy(20.dp),
-            ) {
-                Text("GHOST", style = MaterialTheme.typography.labelLarge)
-                Text(stringResource(R.string.prototype_title), style = MaterialTheme.typography.headlineMedium)
-                Text(stringResource(R.string.prototype_description))
-                Text(stringResource(R.string.permission_title), style = MaterialTheme.typography.titleMedium)
-                Text(stringResource(if (overlayPermission) R.string.permission_granted else R.string.permission_required))
-                OutlinedButton(onClick = openOverlaySettings, modifier = Modifier.fillMaxWidth()) {
-                    Text(stringResource(R.string.permission_button))
-                }
-                Text(stringResource(if (floating.visible) R.string.status_running else R.string.status_stopped))
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Button(
-                        onClick = onStart,
-                        enabled = overlayPermission && !floating.visible,
-                        modifier = Modifier.weight(1f),
-                    ) { Text(stringResource(R.string.start)) }
-                    OutlinedButton(
-                        onClick = onStop,
-                        enabled = floating.visible,
-                        modifier = Modifier.weight(1f),
-                    ) { Text(stringResource(R.string.stop)) }
-                }
-                floating.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-                DetectionPanel(detection, usagePermission, openUsageSettings, openAccessibilitySettings)
-                Text(stringResource(R.string.prototype_note), style = MaterialTheme.typography.bodySmall)
+    Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+        Column(
+            modifier = Modifier.safeDrawingPadding().verticalScroll(rememberScrollState()).padding(24.dp),
+            verticalArrangement = Arrangement.spacedBy(20.dp),
+        ) {
+            Text("GHOST", style = MaterialTheme.typography.labelLarge)
+            Text(stringResource(R.string.prototype_title), style = MaterialTheme.typography.headlineMedium)
+            Text(stringResource(R.string.prototype_description))
+            Text(stringResource(R.string.permission_title), style = MaterialTheme.typography.titleMedium)
+            Text(stringResource(if (overlayPermission) R.string.permission_granted else R.string.permission_required))
+            OutlinedButton(onClick = openOverlaySettings, modifier = Modifier.fillMaxWidth()) {
+                Text(stringResource(R.string.permission_button))
             }
+            Text(stringResource(if (floating.visible) R.string.status_running else R.string.status_stopped))
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Button(
+                    onClick = onStart,
+                    enabled = overlayPermission && !floating.visible,
+                    modifier = Modifier.weight(1f),
+                ) { Text(stringResource(R.string.start)) }
+                OutlinedButton(
+                    onClick = onStop,
+                    enabled = floating.visible,
+                    modifier = Modifier.weight(1f),
+                ) { Text(stringResource(R.string.stop)) }
+            }
+            floating.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+            DetectionPanel(detection, usagePermission, openUsageSettings, openAccessibilitySettings)
+            Text(stringResource(R.string.prototype_note), style = MaterialTheme.typography.bodySmall)
         }
     }
 }

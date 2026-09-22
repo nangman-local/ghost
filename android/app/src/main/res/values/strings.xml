@@ -1,5 +1,22 @@
 <resources>
-    <string name="app_name">GHOST 플로팅</string>
+    <string name="app_name">Ghost</string>
+    <string name="back">뒤로</string>
+
+    <!-- 온보딩 (Figma UI 페이지 → 온보딩 섹션) -->
+    <string name="onboarding_welcome_title">딴짓하면 내가 찾아갈게.</string>
+    <string name="onboarding_welcome_action">Ghost 시작하기</string>
+    <string name="onboarding_overlay_title">다른 앱 위에서도 나타나요.</string>
+    <string name="onboarding_overlay_action">다른 앱 위에 표시 권한 허용</string>
+    <string name="onboarding_accessibility_title">지금 어떤 앱을 사용하고 있는지\n알아야 딴짓을 감지할 수 있어.</string>
+    <string name="onboarding_accessibility_body">접근성 설정에서 ‘GHOST Chrome 감지 테스트’를 켜 주세요.</string>
+    <string name="onboarding_accessibility_action">Chrome 접근성 권한 허용</string>
+    <string name="onboarding_usage_title">내가 딴짓을 알아차리려면\n앱 사용 시간을 확인할 수 있어야해.</string>
+    <string name="onboarding_usage_action">사용 정보 접근 권한 허용</string>
+    <string name="onboarding_notification_title">알림 권한이 필요해요.</string>
+    <string name="onboarding_notification_body">집중 시간, 딴짓 감지 알림 등을\n받을 수 있어요</string>
+    <string name="onboarding_notification_action">알림 허용</string>
+    <string name="onboarding_later">나중에</string>
+
     <string name="prototype_title">플로팅 프로토타입</string>
     <string name="prototype_description">다른 앱 위에 작은 유령을 띄워 보세요. 드래그하면 이동하고, 가볍게 탭하면 인사해요. 바깥 영역은 평소처럼 터치할 수 있어요.</string>
     <string name="permission_title">다른 앱 위에 표시</string>

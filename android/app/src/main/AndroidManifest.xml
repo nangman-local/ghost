@@ -4,6 +4,8 @@
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <!-- 온보딩 알림 단계(API 33+ 런타임 요청). FloatingService의 FGS 알림도 이 권한이 있어야 보인다. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
         android:name=".GhostApplication"
@@ -12,7 +14,13 @@
         android:label="@string/app_name"
         android:supportsRtl="true"
         android:theme="@style/Theme.Ghost">
-        <activity android:name=".MainActivity" android:exported="true">
+        <!-- 가로 모드 미지원(디자인 없음). Android 16+의 큰 화면(sw600dp 이상)에서는 시스템이 이 고정을 무시하므로
+             레이아웃은 가로에서도 깨지지 않게(폭 480dp 가운데 정렬 + 스크롤) 만든다. -->
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:screenOrientation="portrait"
+            tools:ignore="LockedOrientationActivity,DiscouragedApi">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />

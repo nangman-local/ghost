@@ -17,6 +17,13 @@ fun Context.openUsageSettings(onUnavailable: () -> Unit) =
 fun Context.openAccessibilitySettings(onUnavailable: () -> Unit) =
     openSettings(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS), onUnavailable)
 
+/** 알림 팝업을 더 띄울 수 없을 때(두 번 거부) 쓰는 대체 경로. */
+fun Context.openAppNotificationSettings(onUnavailable: () -> Unit) =
+    openSettings(
+        Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, packageName),
+        onUnavailable,
+    )
+
 private fun Context.openSettings(intent: Intent, onUnavailable: () -> Unit) {
     try {
         startActivity(intent)
