@@ -1,10 +1,29 @@
 # server/ — 백엔드
 
-Spring Boot + PostgreSQL (또는 Supabase). 팀 공통 규칙은 루트 [`AGENTS.md`](../AGENTS.md), 공통 정의는 [`shared/`](../shared/)를 따른다.
+Spring Boot + PostgreSQL 기반 백엔드 서버.
+팀 공통 규칙은 루트 [`AGENTS.md`](../AGENTS.md), 공통 정의는 [`shared/`](../shared/)를 따른다.
 
 담당: 서버·동기화 · AI 판단
 
-**현재 상태:** 스캐폴드. 구현 시작 전.
+## 기술 스택
+
+- Java 21
+- Spring Boot 4.1.1
+- Gradle
+- PostgreSQL 17
+- Spring Data JPA
+- Docker Compose
+
+## 로컬 개발 환경
+
+- PostgreSQL은 `compose.yaml`로 실행한다.
+- Docker Compose용 로컬 환경변수는 `.env`에서 관리한다.
+- Spring 로컬 DB 설정은 `application-local.yaml`에서 관리한다.
+- `.env`, `application-local.yaml`은 저장소에 커밋하지 않는다.
+- 공유 가능한 예시 설정만 `.env.example`, `application-local.example.yaml`로 관리한다.
+- Spring 실행 시 `local` profile을 사용한다.
+- 서버 기본 포트는 `8080`이다.
+- `/health`로 서버 실행 여부를 확인한다.
 
 ## 이 서버의 책임
 
@@ -19,7 +38,8 @@ Spring Boot + PostgreSQL (또는 Supabase). 팀 공통 규칙은 루트 [`AGENTS
 
 ## API
 
-**[`shared/api-schema.md`](../shared/api-schema.md)가 계약이다.** 여기를 바꾸면 팀 공유 채널에 공지하고 세 클라이언트를 동시에 갱신한다.
+**[`shared/api-schema.md`](../shared/api-schema.md)가 계약이다.**
+여기를 바꾸면 팀 공유 채널에 공지하고 세 클라이언트를 동시에 갱신한다.
 
 상태 이름은 [`shared/states.md`](../shared/states.md), 이벤트는 [`shared/events.md`](../shared/events.md)를 따른다.
 
@@ -38,7 +58,7 @@ MVP는 규칙만으로 동작해야 한다. AI는 나중에 얹는다.
 - **LLM API 키는 이 서버에만 둔다.** 클라이언트로 내려보내지 않는다.
 - 클라이언트에서 **도메인과 제목만** 받는다. URL 쿼리스트링·화면 텍스트를 받거나 저장하지 않는다.
 - 이벤트 `payload`에 개인 식별 정보를 저장하지 않는다.
-- 시크릿은 환경변수로 주입한다. 저장소에 커밋하지 않는다.
+- 시크릿은 로컬 설정 또는 환경변수로 분리하고 저장소에 커밋하지 않는다.
 
 ## 데이터 모델
 
