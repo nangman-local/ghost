@@ -17,6 +17,26 @@
     <string name="onboarding_notification_action">알림 허용</string>
     <string name="onboarding_later">나중에</string>
 
+    <!-- 홈 (Figma UI 페이지 → 홈 섹션) -->
+    <string name="home_bubble_no_task">할 일 없어?</string>
+    <string name="home_bubble_task">얼마 안남았어!</string>
+    <string name="home_no_task_title">지금은 할 일이 없어요.</string>
+    <string name="home_task_placeholder">ex) 기말 과제 마감</string>
+    <string name="home_add_task">할 일 추가하기</string>
+    <string name="home_today_title">오늘의 할 일</string>
+    <string name="home_start">시작하기</string>
+    <string name="home_record_title">나의 기록</string>
+    <string name="home_focus_time">집중 시간</string>
+    <string name="home_distract_time">딴짓 시간</string>
+    <string name="home_stop">그만하기</string>
+    <string name="home_open_overlay_settings">권한 설정</string>
+    <string name="task_picker_title">할 일 목록</string>
+    <string name="task_picker_empty">아직 할 일이 없어요.</string>
+    <string name="nav_calendar">캘린더</string>
+    <string name="nav_home">홈</string>
+    <string name="nav_more">더보기</string>
+    <string name="calendar_placeholder">캘린더는 준비 중이에요.</string>
+
     <string name="prototype_title">플로팅 프로토타입</string>
     <string name="prototype_description">다른 앱 위에 작은 유령을 띄워 보세요. 드래그하면 이동하고, 가볍게 탭하면 인사해요. 바깥 영역은 평소처럼 터치할 수 있어요.</string>
     <string name="permission_title">다른 앱 위에 표시</string>

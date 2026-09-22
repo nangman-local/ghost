@@ -77,6 +77,20 @@ Figma 시안은 360×760 한 화면 기준 절대 좌표다. 그대로 옮기면
 - 가로 모드는 지원하지 않는다(`screenOrientation="portrait"`). Android 16+ 큰 화면에서는 시스템이 이를 무시하므로 레이아웃은 가로에서도 동작해야 한다.
 - Preview로 360×640(글자 1.3·1.5배), 360×780, 411×891, 673×841을 확인한다.
 
+### 홈 (`ui/home/`)
+
+- 3상태: 할 일 없음(입력) → 오늘의 할 일(시작하기) → 진행 중(진행바·나의 기록·그만하기). 상태 계산은 순수 함수 `homeContent`(단위 테스트).
+- **"시작하기"는 `FocusController.startTask`, "그만하기"는 `stop()`만 부른다.** 세션만 끝나고 할 일은 남는다. 할 일 완료 처리는 서버 연동 때 정한다.
+- 할 일을 추가하면 바로 현재 할 일이 된다. 현재 할 일의 진실의 원천은 서버 세션이므로 `TaskRepository.selectTask`는 서버 담당이 구현한다.
+- '나의 기록'은 **오늘 누적**을 `H:MM`으로 보여준다(`formatHoursMinutes`).
+- **진행률·체크포인트(10/30/50%)는 자리표시 값이다.** 의미(시간 기준인지 작업 단계인지)가 정해지지 않았다. 정해지면 contract로 받는다.
+- 할 일 행 ›는 할 일 목록·추가 팝업을 연다. 시안이 없어 임시 구성이며, 시안이 나오면 `TaskPickerContent`만 바꾼다(띄우는 방식은 `TaskPickerSheet`).
+- '그만하기' 버튼은 Figma '나의 기록' 카드의 빈 박스(56:571) 자리에 임시로 둔 것이다.
+- 오류는 종류(`HomeError`: contract의 `FocusError` 또는 설정 화면 열기 실패)로 받고, 문구와 버튼은 화면이 종류별로 정한다. 권한 문제(`OVERLAY_PERMISSION_MISSING`)일 때만 '권한 설정'을 보여준다. 재시도는 사용자가 한다.
+- '시작하기'는 권한이 없어도 눌린다(의도). 이슈 #1의 "권한 없음: 시작 비활성"은 개발자 도구 기준이다.
+- `HomeViewModel`은 `TaskRepository`·`FocusController`를 생성자로 받는다(앱에서는 `HomeViewModel.Factory`가 `GhostApplication`의 연결을 넣는다). 그래서 Fake로 단위 테스트한다(`HomeViewModelTest`).
+- 하단 탭: 캘린더(자리표시) · 홈 · 더보기(개발자 도구). 탭 전환은 중첩 NavHost + `saveState/restoreState`.
+
 ### 캐릭터 이미지 (Rive 전 임시)
 
 - `ui/component/GhostIllustration`이 포즈(`GhostPose`)별 PNG를 그린다. **Rive(`.riv`)가 나오면 이 Composable 안만 교체한다.**

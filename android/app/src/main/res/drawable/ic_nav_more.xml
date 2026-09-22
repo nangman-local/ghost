@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Figma 하단 탭 더보기 density_medium (node 49:2043). 색은 Icon tint로 준다. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M6.33335 7.33333H17C17.3667 7.33333 17.6667 7.03333 17.6667 6.66667C17.6667 6.3 17.3667 6 17 6H6.33335C5.96669 6 5.66669 6.3 5.66669 6.66667C5.66669 7.03333 5.96669 7.33333 6.33335 7.33333Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M17 16.6667H6.33335C5.96669 16.6667 5.66669 16.9667 5.66669 17.3333C5.66669 17.7 5.96669 18 6.33335 18H17C17.3667 18 17.6667 17.7 17.6667 17.3333C17.6667 16.9667 17.3667 16.6667 17 16.6667Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M17 11.3333H6.33335C5.96669 11.3333 5.66669 11.6333 5.66669 12C5.66669 12.3667 5.96669 12.6667 6.33335 12.6667H17C17.3667 12.6667 17.6667 12.3667 17.6667 12C17.6667 11.6333 17.3667 11.3333 17 11.3333Z" />
+</vector>
