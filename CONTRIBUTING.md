@@ -26,9 +26,7 @@ Claude Code는 [`CLAUDE.md`](./CLAUDE.md)를 자동으로 읽어 `AGENTS.md`로 
 |---|---|---|
 | `main` | 배포/데모용 안정 버전 | 직접 push 금지, PR만 허용 (브랜치 보호 설정) |
 | `develop` | 개발 통합 브랜치 | 평소 작업은 여기로 머지됨 |
-| `feature/*` | 기능 개발 | `develop`에서 분기, `develop`으로 머지 |
-| `fix/*` | 버그 수정 | `develop`에서 분기, `develop`으로 머지 |
-| `infra/*` | 인프라/CI·CD 설정 | `develop`에서 분기, `develop`으로 머지 |
+| `<타입>/*` | 일반 작업 (`feat/*` · `fix/*` · `docs/*` · `infra/*` 등) | `develop`에서 분기, `develop`으로 머지. 타입은 [커밋 타입](#타입-목록)과 같다 |
 | `hotfix/*` | 배포 후 긴급 수정 | `main`에서 분기, `main`과 `develop` 양쪽에 머지 |
 
 ### 흐름
@@ -44,11 +42,15 @@ Claude Code는 [`CLAUDE.md`](./CLAUDE.md)를 자동으로 읽어 `AGENTS.md`로 
 타입/이슈번호-짧은설명(영문, 소문자, 하이픈)
 ```
 
+**타입은 아래 [커밋 타입](#타입-목록)을 그대로 쓴다.** `feature/`처럼 풀어 쓰지 않는다. 브랜치·커밋·이슈 라벨이 같은 이름을 공유해야 헷갈리지 않는다.
+예외는 `hotfix/` 하나다 (`main`에서 분기한다는 표시).
+
 예시:
 
 ```
-feature/14-android-heartbeat
+feat/14-android-heartbeat
 fix/8-vscode-detection
+docs/13-judge-contract
 infra/12-ci-pipeline-setup
 ```
 
