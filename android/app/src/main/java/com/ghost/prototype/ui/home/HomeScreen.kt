@@ -1,5 +1,6 @@
 package com.ghost.prototype.ui.home
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -31,11 +32,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ghost.prototype.R
+import com.ghost.prototype.contract.FocusError
 import com.ghost.prototype.contract.Task
 import com.ghost.prototype.ui.component.Checkpoint
 import com.ghost.prototype.ui.component.FieldButton
@@ -61,10 +61,9 @@ class HomeActions(
 )
 
 @Composable
-fun HomeRoute(viewModel: HomeViewModel = viewModel()) {
+fun HomeRoute(viewModel: HomeViewModel = viewModel(factory = HomeViewModel.Factory)) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
-    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.refreshPermissions() }
 
     HomeScreen(
         state = state,
@@ -115,7 +114,7 @@ fun HomeScreen(state: HomeUiState, actions: HomeActions, modifier: Modifier = Mo
                 if (content is HomeContent.InProgress) {
                     FocusProgress(content.progress, content.checkpoints, Modifier.padding(bottom = 24.dp))
                 }
-                state.error?.let { ErrorLine(it, state.overlayMissing, actions.onOpenOverlaySettings) }
+                state.error?.let { ErrorLine(it, actions.onOpenOverlaySettings) }
                 Box(Modifier.padding(horizontal = 20.dp, vertical = 12.dp)) {
                     when (content) {
                         is HomeContent.NoTask -> NoTaskCard(content, actions)
@@ -128,11 +127,30 @@ fun HomeScreen(state: HomeUiState, actions: HomeActions, modifier: Modifier = Mo
     }
 }
 
+/** 오류 종류별 문구. 새 종류가 생기면 `when`이 컴파일 오류로 알려준다. */
+@StringRes
+private fun HomeError.message(): Int = when (this) {
+    is HomeError.Focus -> when (error) {
+        FocusError.OVERLAY_PERMISSION_MISSING -> R.string.error_permission
+        FocusError.OVERLAY_ATTACH_FAILED -> R.string.error_overlay
+    }
+    HomeError.SettingsUnavailable -> R.string.error_settings
+}
+
+/** 권한 문제일 때만 '권한 설정'으로 안내한다. */
+private val HomeError.offersOverlaySettings: Boolean
+    get() = this == HomeError.Focus(FocusError.OVERLAY_PERMISSION_MISSING)
+
 @Composable
-private fun ErrorLine(message: String, showSettings: Boolean, onOpenSettings: () -> Unit) {
+private fun ErrorLine(error: HomeError, onOpenSettings: () -> Unit) {
     Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(message, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error, textAlign = TextAlign.Center)
-        if (showSettings) {
+        Text(
+            stringResource(error.message()),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.error,
+            textAlign = TextAlign.Center,
+        )
+        if (error.offersOverlaySettings) {
             TextButton(onClick = onOpenSettings) {
                 Text(stringResource(R.string.home_open_overlay_settings), style = MaterialTheme.typography.labelLarge)
             }
@@ -239,7 +257,7 @@ private fun HomeInProgressPreview() {
 private fun HomeErrorPreview() {
     GhostTheme {
         HomeScreen(
-            HomeUiState(HomeContent.TaskReady(sampleTask), error = "표시 권한이 없어 유령을 띄울 수 없어요.", overlayMissing = true),
+            HomeUiState(HomeContent.TaskReady(sampleTask), error = HomeError.Focus(FocusError.OVERLAY_PERMISSION_MISSING)),
             HomeActions(),
         )
     }

@@ -1,5 +1,6 @@
 package com.ghost.prototype.ui.home
 
+import com.ghost.prototype.contract.FocusError
 import com.ghost.prototype.contract.FocusStats
 import com.ghost.prototype.contract.SessionState
 import com.ghost.prototype.contract.Task
@@ -25,11 +26,18 @@ sealed interface HomeContent {
     ) : HomeContent
 }
 
+/** 홈에 보여줄 오류의 종류. 문구와 버튼은 화면이 종류별로 정한다. 자동 재시도는 하지 않는다. */
+sealed interface HomeError {
+    /** 세션·플로팅 실패 (코어가 contract로 알려준 종류). */
+    data class Focus(val error: FocusError) : HomeError
+
+    /** 시스템 설정 화면을 열지 못했다. */
+    data object SettingsUnavailable : HomeError
+}
+
 data class HomeUiState(
     val content: HomeContent = HomeContent.NoTask(""),
-    val error: String? = null,
-    /** 오류와 함께 '권한 설정'을 보여줄지. 자동 재시도는 하지 않는다. */
-    val overlayMissing: Boolean = false,
+    val error: HomeError? = null,
     /** null이면 할 일 팝업이 닫혀 있다. */
     val picker: TaskPickerUiState? = null,
 ) {

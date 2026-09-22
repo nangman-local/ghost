@@ -86,7 +86,9 @@ Figma 시안은 360×760 한 화면 기준 절대 좌표다. 그대로 옮기면
 - **진행률·체크포인트(10/30/50%)는 자리표시 값이다.** 의미(시간 기준인지 작업 단계인지)가 정해지지 않았다. 정해지면 contract로 받는다.
 - 할 일 행 ›는 할 일 목록·추가 팝업을 연다. 시안이 없어 임시 구성이며, 시안이 나오면 `TaskPickerContent`만 바꾼다(띄우는 방식은 `TaskPickerSheet`).
 - '그만하기' 버튼은 Figma '나의 기록' 카드의 빈 박스(56:571) 자리에 임시로 둔 것이다.
-- 오버레이 권한이 없어 시작이 실패하면 오류와 '권한 설정'을 보여준다. 재시도는 사용자가 한다.
+- 오류는 종류(`HomeError`: contract의 `FocusError` 또는 설정 화면 열기 실패)로 받고, 문구와 버튼은 화면이 종류별로 정한다. 권한 문제(`OVERLAY_PERMISSION_MISSING`)일 때만 '권한 설정'을 보여준다. 재시도는 사용자가 한다.
+- '시작하기'는 권한이 없어도 눌린다(의도). 이슈 #1의 "권한 없음: 시작 비활성"은 개발자 도구 기준이다.
+- `HomeViewModel`은 `TaskRepository`·`FocusController`를 생성자로 받는다(앱에서는 `HomeViewModel.Factory`가 `GhostApplication`의 연결을 넣는다). 그래서 Fake로 단위 테스트한다(`HomeViewModelTest`).
 - 하단 탭: 캘린더(자리표시) · 홈 · 더보기(개발자 도구). 탭 전환은 중첩 NavHost + `saveState/restoreState`.
 
 ### 캐릭터 이미지 (Rive 전 임시)
