@@ -5,12 +5,16 @@ import com.ghost.prototype.contract.FocusController
 import com.ghost.prototype.contract.Permission
 import com.ghost.prototype.contract.PermissionStatus
 import com.ghost.prototype.contract.TaskRepository
-import com.ghost.prototype.fake.FakeFocusController
 import com.ghost.prototype.fake.FakeTaskRepository
+import com.ghost.prototype.focus.GhostFocusController
+import com.ghost.prototype.focus.RuleJudge
 import com.ghost.prototype.floating.FloatingStateStore
 import com.ghost.prototype.detection.DetectionStateStore
 import com.ghost.prototype.permission.AndroidPermissionStatus
 import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 
 class GhostApplication : Application() {
     // Process-local only: no service, window, or position is restored after process death.
@@ -23,10 +27,14 @@ class GhostApplication : Application() {
     val permissionStatus: PermissionStatus by lazy { AndroidPermissionStatus(this) }
     val taskRepository: TaskRepository by lazy { FakeTaskRepository() }
     val focusController: FocusController by lazy {
-        FakeFocusController(
+        GhostFocusController(
             startFloating = floatingLauncher::start,
             stopFloating = floatingLauncher::stop,
             floating = floatingState.state,
+            observations = detectionState.state
+                .map { it.recentApp }
+                .stateIn(appScope, SharingStarted.Eagerly, null),
+            judge = RuleJudge.fromSharedRules(packageName),
             overlayGranted = { permissionStatus.isGranted(Permission.OVERLAY) },
             scope = appScope,
         )
