@@ -78,6 +78,31 @@ class OverlayController(
         moveTo(position)
     }
 
+    /**
+     * 개입 단계에 맞춰 캐릭터 표현을 바꾼다(#77). 레벨이 올라가면 창도 같이 커진다.
+     *
+     * **창은 캐릭터 크기 그대로 둔다.** 전체 화면 투명 창을 만들지 않는다
+     * (`android/AGENTS.md` 오버레이 규칙) — 그러면 화면 전체의 터치를 먹는다.
+     */
+    fun applyAppearance(appearance: CharacterAppearance) {
+        val character = view ?: return
+        val layout = params ?: return
+        if (character.appearance == appearance) return
+        character.appearance = appearance
+
+        val scaledWidth = (width * appearance.scale).roundToInt()
+        val scaledHeight = (height * appearance.scale).roundToInt()
+        val grewBy = scaledHeight - layout.height
+        layout.width = scaledWidth
+        layout.height = scaledHeight + greetingExtraHeight()
+        // 커질 때 아래로 자라면 화면 밖으로 밀리기 쉽다. 위로 자라게 해서 제자리에 머물게 한다.
+        val position = state.state.value.position ?: return
+        moveTo(position.copy(y = position.y - grewBy.coerceAtLeast(0)))
+    }
+
+    private fun greetingExtraHeight(): Int =
+        if (state.state.value.greetingVisible) (CharacterView.GREETING_HEIGHT_DP * density).roundToInt() else 0
+
     private fun showGreeting() {
         if (state.state.value.greetingVisible) return
         val character = view ?: return
@@ -95,7 +120,8 @@ class OverlayController(
     private fun moveTo(position: OverlayPosition) {
         val character = view ?: return
         val layout = params ?: return
-        val bounded = bounds().clamp(position, width, layout.height)
+        // 개입 단계에 따라 창이 커지므로(#77) 고정 width 가 아니라 현재 창 크기로 가둔다.
+        val bounded = bounds().clamp(position, layout.width, layout.height)
         layout.x = bounded.x
         layout.y = bounded.y
         try {

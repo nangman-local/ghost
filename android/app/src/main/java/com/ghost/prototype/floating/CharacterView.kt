@@ -18,6 +18,17 @@ class CharacterView(context: Context) : View(context) {
             )
             invalidate()
         }
+    /**
+     * 개입 단계에 따른 표현. `shared/states.md`의 `characterState`를 따른다.
+     * **Rive(`.riv`)가 나오면 이 View 안의 그리기만 교체한다(#16).** 매핑은 [CharacterAppearance]에 있다.
+     */
+    var appearance: CharacterAppearance = CharacterAppearance.forLevel(0)
+        set(value) {
+            if (field == value) return
+            field = value
+            invalidate()
+        }
+
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val body = Path().apply {
         moveTo(10f, 72f)
@@ -52,8 +63,15 @@ class CharacterView(context: Context) : View(context) {
         canvas.drawPath(body, paint)
         paint.style = Paint.Style.FILL
         paint.color = Color.rgb(48, 39, 77)
-        canvas.drawOval(27f, 34f, 33f, 44f, paint)
-        canvas.drawOval(47f, 34f, 53f, 44f, paint)
+        // 개입 단계가 올라갈수록 눈을 키워 시선을 끈다. Rive 전까지의 임시 표현이다(#16).
+        val eye = when (appearance.state) {
+            CharacterState.IDLE -> 0f
+            CharacterState.ALERT -> 1.5f
+            CharacterState.TALK -> 2.5f
+            CharacterState.BLOCK -> 3.5f
+        }
+        canvas.drawOval(27f - eye, 34f - eye, 33f + eye, 44f + eye, paint)
+        canvas.drawOval(47f - eye, 34f - eye, 53f + eye, 44f + eye, paint)
         paint.color = Color.rgb(236, 190, 207)
         canvas.drawOval(19f, 46f, 30f, 51f, paint)
         canvas.drawOval(50f, 46f, 61f, 51f, paint)
