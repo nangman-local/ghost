@@ -240,6 +240,41 @@ class FocusStateMachineTest {
     }
 
     @Test
+    fun `임계값을 바꾸면 세션이 초기화된다`() {
+        val machine = FocusStateMachine(policy).apply { start() }
+        machine.run(policy.levelSeconds[0], distract())
+        assertEquals(1, machine.state.level)
+
+        machine.changePolicy(InterventionPolicy.Demo)
+
+        // 10분 기준 누적을 30초 기준에 넘기면 켜자마자 최고 단계로 뛴다. 그래서 초기화한다.
+        assertEquals(SessionState.WAITING, machine.state.session)
+        assertEquals(0, machine.state.level)
+        assertEquals(0, machine.state.distractSeconds)
+    }
+
+    @Test
+    fun `같은 임계값으로 바꾸면 세션이 유지된다`() {
+        val machine = FocusStateMachine(policy).apply { start() }
+        machine.run(policy.levelSeconds[0], distract())
+
+        machine.changePolicy(InterventionPolicy())
+
+        assertEquals("불필요하게 세션을 끊지 않는다", 1, machine.state.level)
+    }
+
+    @Test
+    fun `임계값을 바꾸면 이후 판정에 새 값이 쓰인다`() {
+        val machine = FocusStateMachine(policy).apply { start() }
+        machine.changePolicy(InterventionPolicy.Demo)
+        machine.start()
+
+        machine.run(30, Observation(Judgement.DISTRACT, 5))
+
+        assertEquals("데모 기준 30초면 1단계", 1, machine.state.level)
+    }
+
+    @Test
     fun `데모 모드가 기본 모드 값을 바꾸지 않는다`() {
         assertEquals(10 * 60, InterventionPolicy().levelSeconds[0])
         assertEquals(30, InterventionPolicy.Demo.levelSeconds[0])
