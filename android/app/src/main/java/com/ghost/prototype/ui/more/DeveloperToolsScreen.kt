@@ -30,7 +30,9 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ghost.prototype.GhostApplication
 import com.ghost.prototype.MainViewModel
 import com.ghost.prototype.R
+import com.ghost.prototype.contract.FocusSnapshot
 import com.ghost.prototype.contract.Permission
+import com.ghost.prototype.contract.SessionState
 import com.ghost.prototype.detection.DetectionPanel
 import com.ghost.prototype.detection.DetectionState
 import com.ghost.prototype.floating.FloatingState
@@ -54,11 +56,13 @@ fun DeveloperToolsRoute(viewModel: MainViewModel = viewModel()) {
     }
     val floating by viewModel.state.collectAsStateWithLifecycle()
     val detection by viewModel.detection.collectAsStateWithLifecycle()
+    val focus by viewModel.focus.collectAsStateWithLifecycle()
     val unavailable = viewModel::permissionSettingsUnavailable
 
     DeveloperToolsScreen(
         floating = floating,
         detection = detection,
+        focus = focus,
         overlayPermission = overlayPermission,
         usagePermission = usagePermission,
         onStart = viewModel::start,
@@ -73,6 +77,7 @@ fun DeveloperToolsRoute(viewModel: MainViewModel = viewModel()) {
 fun DeveloperToolsScreen(
     floating: FloatingState,
     detection: DetectionState,
+    focus: FocusSnapshot,
     overlayPermission: Boolean,
     usagePermission: Boolean,
     onStart: () -> Unit,
@@ -95,21 +100,38 @@ fun DeveloperToolsScreen(
                 Text(stringResource(R.string.permission_button))
             }
             Text(stringResource(if (floating.visible) R.string.status_running else R.string.status_stopped))
+            val running = focus.state != SessionState.WAITING
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Button(
                     onClick = onStart,
-                    enabled = overlayPermission && !floating.visible,
+                    enabled = overlayPermission && !running,
                     modifier = Modifier.weight(1f),
                 ) { Text(stringResource(R.string.start)) }
                 OutlinedButton(
                     onClick = onStop,
-                    enabled = floating.visible,
+                    enabled = running,
                     modifier = Modifier.weight(1f),
                 ) { Text(stringResource(R.string.stop)) }
             }
             floating.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+            SessionPanel(focus)
             DetectionPanel(detection, usagePermission, openUsageSettings, openAccessibilitySettings)
             Text(stringResource(R.string.prototype_note), style = MaterialTheme.typography.bodySmall)
         }
     }
+}
+
+/**
+ * 개입 상태머신이 지금 무엇을 보고 있는지 그대로 보여준다. 실기기 검증(#69)에서 읽는 값이다.
+ * 개입은 아직 화면에 아무것도 그리지 않으므로(캐릭터 모션 #16 · 말풍선 #63), 여기서만 확인할 수 있다.
+ */
+@Composable
+private fun SessionPanel(focus: FocusSnapshot) {
+    Text(stringResource(R.string.session_title), style = MaterialTheme.typography.titleMedium)
+    if (focus.state == SessionState.WAITING) {
+        Text(stringResource(R.string.session_idle))
+        return
+    }
+    Text(stringResource(R.string.session_state, focus.state.name, focus.interventionLevel))
+    focus.taskId?.let { Text(stringResource(R.string.session_task, it)) }
 }

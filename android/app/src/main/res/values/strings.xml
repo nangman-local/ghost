@@ -47,6 +47,10 @@
     <string name="stop">종료</string>
     <string name="status_running">유령을 표시하고 있어요.</string>
     <string name="status_stopped">유령이 꺼져 있어요.</string>
+    <string name="session_title">세션 (개입 상태머신)</string>
+    <string name="session_state">상태: %1$s · 개입 %2$d단계</string>
+    <string name="session_task">할 일: %1$s</string>
+    <string name="session_idle">세션 없음 — 시작하면 딴짓을 누적해요.</string>
     <string name="prototype_note">임시 캐릭터 · 드래그 이동 · 탭하면 인사\n종료 후 위치·말풍선·감지 결과는 초기화돼요. 자동 이동·자동 개입·서버 연동·자동 재시작은 없어요.</string>
     <string name="detection_title">감지 테스트</string>
     <string name="detection_disclosure">시작 중에만 최근 외부 앱을 관측해 이 화면에 표시해요. 기록을 저장하거나 서버로 보내지 않으며, 종료하면 지워져요. 권한 없이도 플로팅만 테스트할 수 있어요.</string>
