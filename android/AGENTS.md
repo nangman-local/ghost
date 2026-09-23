@@ -41,6 +41,7 @@ ui/                              Compose 화면 (navigation · onboarding · hom
 floating/FloatingService         서비스·알림·권한 감시 수명
 floating/OverlayController       WindowManager 창 생성·드래그·제거
 floating/OverlayBounds           Android 독립 좌표 로직 (단위 테스트 대상)
+floating/CharacterAppearance     개입 레벨 → 캐릭터 상태·크기 (Android 독립, 단위 테스트 대상)
 detection/UsageAppMonitor        최근 외부 앱 관측
 detection/ChromeAccessibilityService  Chrome 이벤트 어댑터
 detection/ChromeMetadata         도메인 정제 + 문서 루트 제목
@@ -51,6 +52,7 @@ focus/GhostFocusController       FocusController 실제 구현 — 감지·상�
 ```
 
 - **서비스가 오버레이 창을 소유한다.** ViewModel/Activity에 창이나 Service 인스턴스를 저장하지 않는다.
+  개입 레벨 구독도 서비스가 한다(`FloatingService.observeInterventionLevel`) — 창을 가진 쪽이 그린다.
 - Android 독립 로직(좌표 계산, 도메인 정제, 상태 전이)은 순수 Kotlin으로 분리해 단위 테스트를 붙인다.
 
 ## UI 레이어 규칙

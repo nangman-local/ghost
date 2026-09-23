@@ -19,12 +19,25 @@ import com.ghost.prototype.GhostApplication
 import com.ghost.prototype.MainActivity
 import com.ghost.prototype.R
 import com.ghost.prototype.detection.UsageAppMonitor
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 
 class FloatingService : Service() {
     private val state get() = (application as GhostApplication).floatingState
     private var overlay: OverlayController? = null
     private val detection get() = (application as GhostApplication).detectionState
     private val usageMonitor by lazy { UsageAppMonitor(this, detection) }
+    private val focus get() = (application as GhostApplication).focusController
+    /** 개입 레벨 구독(#77). 서비스가 사는 동안만 돈다. */
+    private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+    private var appearanceJob: Job? = null
     private val handler = Handler(Looper.getMainLooper())
     private val permissionListener = AppOpsManager.OnOpChangedListener { op, packageName ->
         if (op == AppOpsManager.OPSTR_SYSTEM_ALERT_WINDOW && packageName == this.packageName) {
@@ -64,6 +77,7 @@ class FloatingService : Service() {
                 if (state.state.value.visible) {
                     detection.start(System.currentTimeMillis())
                     usageMonitor.start()
+                    observeInterventionLevel()
                 }
             }
         } catch (error: RuntimeException) {
@@ -79,6 +93,7 @@ class FloatingService : Service() {
     }
 
     private fun fail(message: Int) {
+        appearanceJob?.cancel()
         usageMonitor.stop()
         state.failed(getString(message))
         overlay?.hide()
@@ -104,7 +119,24 @@ class FloatingService : Service() {
             .build()
     }
 
+    /**
+     * 개입 레벨이 바뀌면 캐릭터 표현을 바꾼다(#77).
+     *
+     * 서비스가 오버레이 창을 소유하므로(`android/AGENTS.md`) 구독도 여기서 한다.
+     * 레벨만 꺼내서 구독하므로 세션의 다른 값이 바뀌어도 다시 그리지 않는다.
+     */
+    private fun observeInterventionLevel() {
+        appearanceJob?.cancel()
+        appearanceJob = focus.state
+            .map { it.interventionLevel }
+            .distinctUntilChanged()
+            .onEach { level -> overlay?.applyAppearance(CharacterAppearance.forLevel(level)) }
+            .launchIn(serviceScope)
+    }
+
     override fun onDestroy() {
+        appearanceJob?.cancel()
+        serviceScope.cancel()
         usageMonitor.stop()
         getSystemService(AppOpsManager::class.java).stopWatchingMode(permissionListener)
         handler.removeCallbacksAndMessages(null)
