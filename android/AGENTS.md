@@ -17,7 +17,7 @@ Kotlin + Jetpack Compose. 팀 공통 규칙은 루트 [`AGENTS.md`](../AGENTS.md
 
 ## 빌드
 
-- Android SDK Platform 36 / Build Tools 35.0.0, JDK 17 이상
+- Android SDK Platform 36 / Build Tools 35.0.0, **JDK 17 또는 21** (JDK 25는 AGP 8.11이 모른다 — `error 25`로 실패한다. 설치·오류는 `README.md`)
 - Gradle Wrapper 8.14.3 / AGP 8.11.0 / Kotlin 2.1.20
 - `minSdk 26`, `targetSdk 36`
 
