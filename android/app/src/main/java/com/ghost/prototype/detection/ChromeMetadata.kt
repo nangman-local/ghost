@@ -55,6 +55,12 @@ interface ChromeNode {
     val childCount: Int
     fun child(index: Int): ChromeNode?
     fun release()
+
+    /**
+     * 화면 전체를 훑지 않고 해당 뷰 ID의 노드만 직접 찾는다.
+     * 커스텀 탭처럼 주소창이 트리 탐색으로 잡히지 않는 화면에서 쓴다. 본문은 지나가지 않는다.
+     */
+    fun findByViewId(viewId: String): List<ChromeNode> = emptyList()
 }
 
 class ChromeMetadataReader {
@@ -82,9 +88,33 @@ class ChromeMetadataReader {
             }
         }
         visit(root, 0)
+        // 커스텀 탭 등 트리 탐색으로 주소창에 닿지 못하는 화면: 주소창 ID로만 직접 조회한다.
+        if (domain == null) domain = urlBarByViewId(root)
         // Do not pair a title with an unknown/being-edited address or preserve a previous page.
         val title = if (domain != null) pageTitle ?: chromeTitle(windowTitle) else null
         val source = if (title == null) null else if (pageTitle != null) TitleSource.PAGE else TitleSource.WINDOW
         return ChromeObservation(domain, title, source, now)
+    }
+
+    /**
+     * 주소창 노드만 직접 조회한다. 편집 중·비밀번호·다른 앱 노드는 읽지 않는다.
+     * 커스텀 탭의 주소창은 화면에 보여도 `isVisibleToUser=false`로 보고되므로(실기기 확인)
+     * 이 경로에서는 가시성을 조건에 넣지 않는다. 트리 탐색 경로는 종전대로 가시성을 지킨다.
+     */
+    private fun urlBarByViewId(root: ChromeNode): String? {
+        val nodes = root.findByViewId("$CHROME_PACKAGE:id/url_bar")
+        var found: String? = null
+        nodes.forEach { node ->
+            try {
+                if (found == null && node.packageName == CHROME_PACKAGE &&
+                    !node.focused && !node.password
+                ) {
+                    found = chromeDomain(node.text)
+                }
+            } finally {
+                node.release()
+            }
+        }
+        return found
     }
 }

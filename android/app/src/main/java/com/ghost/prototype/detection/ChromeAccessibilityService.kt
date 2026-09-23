@@ -37,7 +37,8 @@ class ChromeAccessibilityService : AccessibilityService() {
                     @Suppress("DEPRECATION")
                     window?.recycle()
                 }
-                store.chromeObserved(reader.read(AndroidChromeNode(root), title, System.currentTimeMillis()))
+                val node = AndroidChromeNode(root) { chromeWindowRoots() }
+                store.chromeObserved(reader.read(node, title, System.currentTimeMillis()))
             } finally {
                 @Suppress("DEPRECATION")
                 root.recycle()
@@ -46,6 +47,16 @@ class ChromeAccessibilityService : AccessibilityService() {
             // No exception payload or screen metadata in logs.
             store.chromeUnavailable()
         }
+    }
+
+    /**
+     * 커스텀 탭은 활성 창의 루트가 웹 콘텐츠라 주소창이 그 아래에 없다.
+     * 주소창을 찾을 때만 Chrome의 다른 창 루트도 후보로 넘긴다. 본문은 지나가지 않는다.
+     */
+    private fun chromeWindowRoots(): List<AccessibilityNodeInfo> = try {
+        windows.mapNotNull { it.root }.filter { it.packageName?.toString() == CHROME_PACKAGE }
+    } catch (_: RuntimeException) {
+        emptyList()
     }
 
     override fun onInterrupt() {
@@ -71,7 +82,10 @@ class ChromeAccessibilityService : AccessibilityService() {
     }
 }
 
-private class AndroidChromeNode(private val node: AccessibilityNodeInfo) : ChromeNode {
+private class AndroidChromeNode(
+    private val node: AccessibilityNodeInfo,
+    private val otherRoots: () -> List<AccessibilityNodeInfo> = { emptyList() },
+) : ChromeNode {
     override val packageName get() = node.packageName?.toString()
     override val viewId get() = node.viewIdResourceName
     override val className get() = node.className?.toString()
@@ -83,6 +97,10 @@ private class AndroidChromeNode(private val node: AccessibilityNodeInfo) : Chrom
     override val description get() = node.contentDescription?.toString()
     override val childCount get() = node.childCount
     override fun child(index: Int): ChromeNode? = node.getChild(index)?.let(::AndroidChromeNode)
+    override fun findByViewId(viewId: String): List<ChromeNode> =
+        (node.findAccessibilityNodeInfosByViewId(viewId).orEmpty() +
+            otherRoots().flatMap { it.findAccessibilityNodeInfosByViewId(viewId).orEmpty() })
+            .take(4).map { AndroidChromeNode(it) }
     @Suppress("DEPRECATION")
     override fun release() { node.recycle() }
 }
