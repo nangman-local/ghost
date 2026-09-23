@@ -35,7 +35,10 @@ MainActivity                     setContent { GhostApp() } 만 둔다
 MainViewModel / FloatingLauncher 사용자 시작·종료 명령 (개발자 도구가 사용)
 GhostApplication                 프로세스 내부 상태 저장소 + contract 연결 지점(수동 DI)
 contract/                        UI ↔ 코어 ↔ 서버 경계 인터페이스 (FocusController · TaskRepository · PermissionStatus)
-fake/                            contract의 임시 구현 (서버·상태머신 연동 전)
+fake/                            contract의 임시 구현 (서버 연동 전 · UI 단위 테스트용)
+data/LocalTaskRepository         기기에 저장하는 TaskRepository (Android 독립, 단위 테스트 대상)
+data/TaskStorage                 저장 경계 + 날짜 정리 · 손상값 정리 (순수 Kotlin)
+data/PreferencesTaskStorage      SharedPreferences JSON 저장 (Android 구현)
 permission/                      PermissionStatus 구현 (시스템 설정 직접 조회)
 ui/                              Compose 화면 (navigation · onboarding · home · more · component · theme)
 floating/FloatingService         서비스·알림·권한 감시 수명
@@ -101,6 +104,12 @@ Figma 시안은 360×760 한 화면 기준 절대 좌표다. 그대로 옮기면
 
 - 3상태: 할 일 없음(입력) → 오늘의 할 일(시작하기) → 진행 중(진행바·나의 기록·그만하기). 상태 계산은 순수 함수 `homeContent`(단위 테스트).
 - **"시작하기"는 `FocusController.startTask`, "그만하기"는 `stop()`만 부른다.** 세션만 끝나고 할 일은 남는다. 할 일 완료 처리는 서버 연동 때 정한다.
+- **할 일·기록은 기기에 저장된다(#53).** 앱을 껐다 켜도 남는다. `LocalTaskRepository` + `PreferencesTaskStorage`(JSON).
+  - **날짜가 바뀌면 '오늘 누적'만 0으로 되돌리고 할 일은 남긴다**(`StoredTasks.forDate`). 기기 시간대를 따른다.
+  - 저장값이 깨져 있어도 앱은 열린다 — `sanitize`가 빈 id·없는 현재 할 일을 버리고, `nextId`가 작으면 id 충돌을 막는다.
+  - **개인 식별 정보를 저장하지 않는다.** 할 일 제목은 사용자가 쓴 것이고 기기 밖으로 내보내지 않는다.
+  - 서버가 진실의 원천이라는 원칙은 그대로다. 이 저장은 서버 연동(#14) 전까지의 임시 보관이고, 연동 후에는 오프라인 캐시가 된다.
+  - `FakeTaskRepository`는 UI 단위 테스트용으로 남겨 둔다.
 - 할 일을 추가하면 바로 현재 할 일이 된다. 현재 할 일의 진실의 원천은 서버 세션이므로 `TaskRepository.selectTask`는 서버 담당이 구현한다.
 - '나의 기록'은 **오늘 누적**을 `H:MM`으로 보여준다(`formatHoursMinutes`).
   딴짓 시간은 오늘 누적(`FocusStats`)과 **이번 세션 누적**(`FocusSnapshot.distractSeconds`) 중 **큰 값**을 쓴다(#71).
