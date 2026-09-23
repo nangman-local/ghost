@@ -47,6 +47,10 @@
     <string name="stop">종료</string>
     <string name="status_running">유령을 표시하고 있어요.</string>
     <string name="status_stopped">유령이 꺼져 있어요.</string>
+    <string name="demo_mode_title">데모 모드</string>
+    <string name="demo_mode_body">개입 단계를 초 단위로 줄여요. 발표 시연용이고, 앱을 다시 켜면 꺼져요.</string>
+    <string name="demo_mode_on">데모 모드 켜기 (30초·60초)</string>
+    <string name="demo_mode_off">기본 모드로 돌아가기 (10분·15분)</string>
     <string name="session_title">세션 (개입 상태머신)</string>
     <string name="session_state">상태: %1$s · 개입 %2$d단계</string>
     <string name="session_task">할 일: %1$s</string>

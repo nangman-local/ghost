@@ -57,12 +57,15 @@ fun DeveloperToolsRoute(viewModel: MainViewModel = viewModel()) {
     val floating by viewModel.state.collectAsStateWithLifecycle()
     val detection by viewModel.detection.collectAsStateWithLifecycle()
     val focus by viewModel.focus.collectAsStateWithLifecycle()
+    val demoMode by viewModel.demoMode.collectAsStateWithLifecycle()
     val unavailable = viewModel::permissionSettingsUnavailable
 
     DeveloperToolsScreen(
         floating = floating,
         detection = detection,
         focus = focus,
+        demoMode = demoMode,
+        onDemoModeChange = viewModel::setDemoMode,
         overlayPermission = overlayPermission,
         usagePermission = usagePermission,
         onStart = viewModel::start,
@@ -78,6 +81,8 @@ fun DeveloperToolsScreen(
     floating: FloatingState,
     detection: DetectionState,
     focus: FocusSnapshot,
+    demoMode: Boolean,
+    onDemoModeChange: (Boolean) -> Unit,
     overlayPermission: Boolean,
     usagePermission: Boolean,
     onStart: () -> Unit,
@@ -115,9 +120,23 @@ fun DeveloperToolsScreen(
             }
             floating.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
             SessionPanel(focus)
+            DemoModePanel(demoMode, onDemoModeChange)
             DetectionPanel(detection, usagePermission, openUsageSettings, openAccessibilitySettings)
             Text(stringResource(R.string.prototype_note), style = MaterialTheme.typography.bodySmall)
         }
+    }
+}
+
+/**
+ * 데모 모드 토글(#65). 발표 시연에서 10분을 기다릴 수 없어 초 단위로 줄인다.
+ * 임계값은 `InterventionPolicy.Demo`이고, 기본값을 건드리지 않는다.
+ */
+@Composable
+private fun DemoModePanel(enabled: Boolean, onChange: (Boolean) -> Unit) {
+    Text(stringResource(R.string.demo_mode_title), style = MaterialTheme.typography.titleMedium)
+    Text(stringResource(R.string.demo_mode_body), style = MaterialTheme.typography.bodySmall)
+    OutlinedButton(onClick = { onChange(!enabled) }, modifier = Modifier.fillMaxWidth()) {
+        Text(stringResource(if (enabled) R.string.demo_mode_off else R.string.demo_mode_on))
     }
 }
 

@@ -36,10 +36,23 @@ data class FocusMachineState(
  *
  * 시간은 호출자가 [tick]으로 넣는다. 내부에 타이머를 두지 않는다 — 테스트에서 시간을 제어하기 위해서다.
  */
-class FocusStateMachine(private val policy: InterventionPolicy = InterventionPolicy()) {
+class FocusStateMachine(policy: InterventionPolicy = InterventionPolicy()) {
+
+    var policy: InterventionPolicy = policy
+        private set
 
     var state: FocusMachineState = FocusMachineState()
         private set
+
+    /**
+     * 임계값을 바꾼다(데모 모드 #65). **진행 중인 세션은 끝낸다** —
+     * 10분 기준으로 쌓인 누적을 30초 기준에 그대로 넘기면 즉시 최고 단계로 뛴다.
+     */
+    fun changePolicy(next: InterventionPolicy) {
+        if (next == policy) return
+        policy = next
+        state = FocusMachineState()
+    }
 
     /** 할 일을 시작한다. `WAITING → FOCUS`. 누적은 0에서 출발한다. */
     fun start() {

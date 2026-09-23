@@ -40,13 +40,14 @@ class GhostFocusController(
     private val judge: RuleJudge,
     private val overlayGranted: () -> Boolean,
     private val scope: CoroutineScope,
-    private val policy: InterventionPolicy = InterventionPolicy(),
+    policy: InterventionPolicy = InterventionPolicy(),
     /** 테스트에서 시간을 제어하기 위해 주입한다. */
     private val nowMillis: () -> Long = System::currentTimeMillis,
     private val delayMillis: suspend (Long) -> Unit = { kotlinx.coroutines.delay(it) },
 ) : FocusController {
 
     private val machine = FocusStateMachine(policy)
+    private val demoMode = MutableStateFlow(false)
     private val taskId = MutableStateFlow<String?>(null)
     private val machineState = MutableStateFlow(machine.state)
 
@@ -123,6 +124,30 @@ class GhostFocusController(
     /** 세션 누적 딴짓 시간(#62). `state.value.distractSeconds`와 같다. */
     val distractSeconds: Int get() = machineState.value.distractSeconds
 
+    /** 데모 모드 여부(#65). 발표 시연용으로 임계값을 초 단위로 줄인다. */
+    val demoModeEnabled: StateFlow<Boolean> = demoMode
+
+    /**
+     * 데모 모드를 켜고 끈다(#65).
+     *
+     * **진행 중인 세션은 끝난다.** 10분 기준으로 쌓인 누적을 30초 기준에 그대로 넘기면
+     * 켜자마자 최고 단계로 뛰기 때문이다. 앱을 다시 켜면 기본 모드로 돌아간다
+     * (실수로 켜둔 채 배포되지 않게 저장하지 않는다).
+     */
+    fun setDemoMode(enabled: Boolean) {
+        if (demoMode.value == enabled) return
+        demoMode.value = enabled
+        machine.changePolicy(if (enabled) InterventionPolicy.Demo else InterventionPolicy())
+        if (machine.state.session == SessionState.WAITING) {
+            taskId.value = null
+            ticker?.cancel()
+            ticker = null
+            currentJudgement = null
+            stopFloating()
+        }
+        publish()
+    }
+
     private fun onObserved(observation: AppObservation?) {
         val judgement = observation?.packageName?.let(judge::judge)
         if (judgement != currentJudgement) {
@@ -145,7 +170,7 @@ class GhostFocusController(
         //
         // 이렇게 하지 않으면 `minHoldSeconds` 만큼이 사라져서, 10분을 봤는데 누적은 9분 40초가 된다.
         // "유튜브 본 지 10분 됐어"는 실제 경과 시간이어야 한다.
-        if (observation != null && held < policy.minHoldSeconds) return
+        if (observation != null && held < machine.policy.minHoldSeconds) return
 
         lastTickAt = now
         machine.tick(elapsed, observation)
