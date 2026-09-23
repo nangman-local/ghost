@@ -69,4 +69,32 @@ abstract class FocusControllerContract {
         settle()
         assertTrue("shared/states.md: interventionLevel은 0~3", controller.state.value.interventionLevel in 0..3)
     }
+
+    /**
+     * 세션은 기기 안에 하나뿐이다(#52). 어느 화면에서 시작하든 같은 세션을 본다.
+     * `shared/api-schema.md`의 `devices[].state`가 기기당 하나이므로, 기기 안에서 먼저 하나여야 한다.
+     */
+    @Test
+    fun sessionIsSingleAcrossCallers() = runTest {
+        val controller = create()
+
+        // 한쪽(예: 개발자 도구)에서 시작하면
+        controller.startTask("t1")
+        settle()
+
+        // 다른 쪽(예: 홈)이 보는 상태도 같아야 한다. 같은 인스턴스를 보므로 상태가 하나다.
+        assertEquals("t1", controller.state.value.taskId)
+        assertNotEquals(SessionState.WAITING, controller.state.value.state)
+
+        // 다른 할 일로 다시 시작하면 세션이 갈라지지 않고 교체된다.
+        controller.startTask("t2")
+        settle()
+        assertEquals("두 세션이 동시에 살아 있으면 안 된다", "t2", controller.state.value.taskId)
+
+        // 한쪽에서 끝내면 모두에게 끝난 것이다.
+        controller.stop()
+        settle()
+        assertEquals(SessionState.WAITING, controller.state.value.state)
+        assertNull(controller.state.value.taskId)
+    }
 }

@@ -59,10 +59,19 @@ UI(화면)·코어(감지·오버레이·상태머신)·서버 연동을 서로 
 
 - **화면 Composable은 `UiState`와 콜백만 받는다.** 서비스·Repository·StateStore를 직접 참조하지 않는다.
 - **`ui/`와 그 ViewModel은 `contract/`만 본다.** `floating/`·`detection/`·`data/`를 import하지 않는다.
-  - 예외: `ui/more/`의 개발자 도구 화면. 실기기 검증용 기존 화면(`DetectionPanel`, 시작·종료)을 그대로 쓴다.
+  - 예외: `ui/more/`의 개발자 도구 화면. 실기기 검증용으로 `FloatingState`·`DetectionState`를 직접 본다.
+    단 **시작·종료는 예외가 아니다** — 아래 "세션은 하나다" 참고.
 - **contract 구현 담당:** `FocusController` → Android 코어 오너, `TaskRepository` → 서버·동기화 담당, `PermissionStatus` → UI 담당.
   - Fake를 실제 구현으로 바꿀 때는 `GhostApplication`의 연결부만 고친다.
   - contract를 바꾸면 `shared/`처럼 팀 공유 채널에 공지한다. 세 담당이 같이 쓰는 경계다.
+- **세션은 기기 안에 하나다(#52).** 홈이든 개발자 도구든 **`FocusController`를 거쳐** 시작·종료한다.
+  `FloatingLauncher`를 직접 부르지 않는다 — 그러면 플로팅 창만 뜨고 세션이 시작되지 않아,
+  딴짓을 아무리 해도 누적되지 않고 개입도 일어나지 않는다. 검증할 때 버그와 구분이 안 된다.
+  `FloatingLauncher`는 `GhostApplication`이 `GhostFocusController`에 넘기는 용도로만 쓴다.
+  `shared/api-schema.md`의 `devices[].state`가 기기당 하나이므로 기기 안에서 먼저 하나여야 한다(서버 연동 #14의 선행 조건).
+  규격은 `FocusControllerContract.sessionIsSingleAcrossCallers`에 있다.
+  - 개발자 도구에는 선택된 할 일이 없어 진단용 id(`MainViewModel.DIAGNOSTIC_TASK_ID`)로 세션을 연다.
+    **서버 연동 때 이 세션을 그대로 올리지 않는다.** 진단용임을 표시하거나 제외한다.
 - **`FocusController`의 실제 구현은 `focus/GhostFocusController`다(#61).** `FakeFocusController`는 다른 담당이 UI를 테스트할 때 쓰는 용도로 남겨 둔다.
   서버 연결은 아직 없다(#14). 세션은 프로세스 메모리에만 있고, 프로세스가 죽으면 사라진다.
 - **실패는 문구가 아니라 종류(`FocusError`)로 전달한다.** 화면 문구·버튼은 UI가 종류별로 정한다. 코어의 `FloatingState.error`는 아직 문자열이라, 지금은 Fake가 오버레이 권한 여부로 종류를 가른다. 코어가 오류 종류를 직접 내보내면 이 판단은 없앤다.
@@ -97,6 +106,8 @@ Figma 시안은 360×760 한 화면 기준 절대 좌표다. 그대로 옮기면
 - '시작하기'는 권한이 없어도 눌린다(의도). 이슈 #1의 "권한 없음: 시작 비활성"은 개발자 도구 기준이다.
 - `HomeViewModel`은 `TaskRepository`·`FocusController`를 생성자로 받는다(앱에서는 `HomeViewModel.Factory`가 `GhostApplication`의 연결을 넣는다). 그래서 Fake로 단위 테스트한다(`HomeViewModelTest`).
 - 하단 탭: 캘린더(자리표시) · 홈 · 더보기(개발자 도구). 탭 전환은 중첩 NavHost + `saveState/restoreState`.
+- 개발자 도구의 시작·종료 버튼은 **세션 상태**(`FocusSnapshot.state`)로 켜고 끈다. 플로팅 창 가시성이 아니다.
+  `SessionPanel`이 세션 상태·개입 레벨을 그대로 보여준다 — 개입이 아직 화면에 아무것도 그리지 않으므로(#16·#63) 실기기 검증(#69)은 이 값을 읽는다.
 
 ### 캐릭터 이미지 (Rive 전 임시)
 

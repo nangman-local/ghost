@@ -49,7 +49,9 @@ ui/                           Compose 화면: onboarding · home · calendar · 
 contract/                     UI ↔ 코어 ↔ 서버 경계 인터페이스 (FocusController · TaskRepository · PermissionStatus)
 fake/                         contract 임시 구현 (서버·상태머신 연동 전)
 permission/                   PermissionStatus 구현 (시스템 설정 직접 조회)
-MainViewModel / FloatingLauncher  개발자 도구의 시작·종료 명령
+MainViewModel                 개발자 도구의 시작·종료 (FocusController 경유 — 홈과 같은 세션)
+FloatingLauncher              플로팅 시작·종료 명령 (GhostFocusController 가 사용)
+focus/                        개입 상태머신 · 임계값 · 로컬 규칙 판단 · FocusController 구현
 GhostApplication              프로세스 내부 FloatingStateStore + DetectionStateStore + contract 연결 지점
 floating/FloatingService      서비스·알림·권한 감시 수명
 floating/OverlayController    WindowManager 창 생성·드래그·제거
@@ -123,7 +125,7 @@ export ANDROID_HOME=/path/to/Android/Sdk
 
 기존 방식 그대로다. **표시 권한 설정** → 허용 후 복귀 → **시작** → 플로팅·감지 패널 확인 → **종료**. 아래 체크리스트와 "휴대폰에서 한 번에 확인할 순서"의 **시작·종료 버튼은 이 화면의 버튼**을 말한다.
 
-> 개발자 도구의 시작·종료와 홈의 시작하기·그만하기는 지금 서로의 상태를 공유하지 않는다(홈 세션은 임시 구현). 한 검증 안에서는 한쪽 버튼만 쓴다.
+> 개발자 도구의 시작·종료와 홈의 시작하기·그만하기는 **같은 세션 하나**를 본다(#52). 어느 쪽으로 시작하든 다른 쪽에도 반영되고, 개입 상태머신도 똑같이 동작한다.
 
 ## 검증
 
