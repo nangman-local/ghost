@@ -17,7 +17,7 @@ Kotlin + Jetpack Compose. 팀 공통 규칙은 루트 [`AGENTS.md`](../AGENTS.md
 
 ## 빌드
 
-- Android SDK Platform 36 / Build Tools 35.0.0, JDK 17 이상
+- Android SDK Platform 36 / Build Tools 35.0.0, **JDK 17 또는 21** (JDK 25는 AGP 8.11이 모른다 — `error 25`로 실패한다. 설치·오류는 `README.md`)
 - Gradle Wrapper 8.14.3 / AGP 8.11.0 / Kotlin 2.1.20
 - `minSdk 26`, `targetSdk 36`
 
@@ -44,6 +44,10 @@ floating/OverlayBounds           Android 독립 좌표 로직 (단위 테스트 
 detection/UsageAppMonitor        최근 외부 앱 관측
 detection/ChromeAccessibilityService  Chrome 이벤트 어댑터
 detection/ChromeMetadata         도메인 정제 + 문서 루트 제목
+focus/FocusStateMachine          딴짓 누적 → 개입 레벨 승급 (Android 독립, 단위 테스트 대상)
+focus/InterventionPolicy         개입 임계값 (기본·데모 모드)
+focus/RuleJudge                  로컬 규칙 판단 (FOCUS/DISTRACT/AMBIGUOUS)
+focus/GhostFocusController       FocusController 실제 구현 — 감지·상태머신·플로팅 배선
 ```
 
 - **서비스가 오버레이 창을 소유한다.** ViewModel/Activity에 창이나 Service 인스턴스를 저장하지 않는다.
@@ -59,7 +63,8 @@ UI(화면)·코어(감지·오버레이·상태머신)·서버 연동을 서로 
 - **contract 구현 담당:** `FocusController` → Android 코어 오너, `TaskRepository` → 서버·동기화 담당, `PermissionStatus` → UI 담당.
   - Fake를 실제 구현으로 바꿀 때는 `GhostApplication`의 연결부만 고친다.
   - contract를 바꾸면 `shared/`처럼 팀 공유 채널에 공지한다. 세 담당이 같이 쓰는 경계다.
-- `FakeFocusController`는 세션 상태를 메모리에만 두고 기존 플로팅 시작·종료만 호출한다. **세션·상태머신·서버 연결은 코어 오너 TODO다.**
+- **`FocusController`의 실제 구현은 `focus/GhostFocusController`다(#61).** `FakeFocusController`는 다른 담당이 UI를 테스트할 때 쓰는 용도로 남겨 둔다.
+  서버 연결은 아직 없다(#14). 세션은 프로세스 메모리에만 있고, 프로세스가 죽으면 사라진다.
 - **실패는 문구가 아니라 종류(`FocusError`)로 전달한다.** 화면 문구·버튼은 UI가 종류별로 정한다. 코어의 `FloatingState.error`는 아직 문자열이라, 지금은 Fake가 오버레이 권한 여부로 종류를 가른다. 코어가 오류 종류를 직접 내보내면 이 판단은 없앤다.
 - **contract 규격 테스트:** `test/.../contract/FocusControllerContract`·`TaskRepositoryContract`에 모든 구현이 지켜야 할 동작이 있다. 실제 구현을 만들면 이 클래스를 상속한 테스트로 자기 구현을 돌린다(예: `FakeFocusControllerTest`). 테스트는 각자 맡은 코드의 담당이 쓴다.
 - 접근성 허용 여부는 `AccessibilityManager`의 활성 서비스 목록으로 본다. 서비스 연결 여부(`chromeConnected`)는 프로세스 메모리 값이라 권한 판정에 쓰지 않는다.
@@ -114,6 +119,25 @@ Figma 시안은 360×760 한 화면 기준 절대 좌표다. 그대로 옮기면
   - 두 번 거부해 팝업이 더 뜨지 않으면(`shouldShowRequestPermissionRationale == false`) 앱 알림 설정을 연다.
 - **Play 정책:** 접근성·사용 정보 접근은 요청 **전에** 무엇을 읽고 무엇을 읽지 않는지 눈에 띄게 고지해야 한다. 지금 온보딩 문구는 Figma를 따른 것이라 이 요구를 충족하지 않는다. 공개 배포 전 #23에서 문구를 확정한다. 상세 고지는 더보기 > 개발자 도구에 남아 있다.
 - `START_NOT_STICKY`. 부팅 수신자·자동 복구 없음.
+
+## 개입 상태머신 (`focus/`)
+
+**이 서비스의 핵심 가설을 구현한 곳이다.** 딴짓을 누적해 개입 레벨을 올린다.
+
+- **판단 로직은 전부 `FocusStateMachine`에 있다.** Android 타입이 들어오지 않아 단위 테스트로 전부 검증한다(`FocusStateMachineTest`).
+  `GhostFocusController`는 배선만 한다 — 감지 관측을 `RuleJudge`로 판정해 상태머신에 넣고, 결과를 `FocusSnapshot`으로 내보낸다.
+- **임계값은 `shared/states.md`의 "개입 전이 규칙" 표가 진실의 원천이다.** `InterventionPolicy`가 같은 값을 들고 있다.
+  한쪽만 고치지 않는다. **PC와도 같은 값을 써야 한다.**
+- **지금 값은 임시값이다.** 예소팀 7명이 2026-09-24부터 도그푸딩하며 조정한다(#10). 조정되면 `InterventionPolicy` 기본값과 `shared/states.md`를 같이 고친다.
+- **임계값을 하드코딩하지 않는다.** `InterventionPolicy`를 주입받는다 — 데모 모드(#65)가 같은 로직을 초 단위로 돌린다.
+- **MVP는 2단계까지다**(`maxLevel = 2`). 3단계 화면 가리기는 #22에서 터치 차단 범위를 설계한 뒤에 올린다.
+- **누적은 연속이 아니라 세션 합계다.** 잠깐 복귀했다 돌아와도 누적이 이어진다. 유예 시간(30초) 이상 집중해야 리셋된다.
+- **`minHoldSeconds`만큼을 누적에서 빼지 않는다.** 판정이 확정될 때까지 시간을 흘려보내지 않고 기다렸다가 한꺼번에 누적한다.
+  빼면 10분을 봤는데 누적이 9분 40초가 되어 "유튜브 본 지 10분 됐어"가 거짓말이 된다(`누적은 유지 시간만큼 깎이지 않는다` 테스트).
+- **감지 실패는 딴짓이 아니다.** 관측이 없거나 `AMBIGUOUS`면 누적하지 않고 개입하지도 않는다. 오탐이 미탐보다 훨씬 치명적이다.
+- **틱 루프는 세션이 끝나면 같이 끝난다.** 대기 중에 타이머를 돌리지 않는다. 끝나지 않는 루프는 테스트에서 `advanceUntilIdle`을 멈추지 못하게 만든다.
+- `RuleJudge`는 지금 `shared/distract-rules.json` 값을 상수로 들고 있다. 자산 파일을 읽는 방식은 서버가 규칙을 내려주는 #12 때 정한다.
+  **값을 고칠 때는 `shared/distract-rules.json`을 먼저 고치고 반영한다.**
 
 ## 오버레이 규칙
 

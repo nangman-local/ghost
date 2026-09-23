@@ -66,10 +66,29 @@ detection/DetectionPanel       최근 관측/권한/미감지 상태 표시
 
 ## 빌드 및 설치
 
-- Android SDK Platform 36 / Build Tools 35.0.0, JDK 17 이상.
+- Android SDK Platform 36 / Build Tools 35.0.0.
+- **JDK 17 또는 21.** JDK 25에서는 빌드가 실패한다(아래 표 참고). AGP 8.11이 아직 모르는 버전이다.
 - Gradle Wrapper 8.14.3 / AGP 8.11.0 / Kotlin 2.1.20.
 - `minSdk 26`, `targetSdk 36`. Android 8~16 전체 실기기 호환성이 검증됐다는 뜻은 아니다.
 - Android Studio에서 `android/` 폴더를 열거나 아래 명령을 사용한다.
+
+### Android Studio 없이 SDK만 설치 (macOS)
+
+```sh
+brew install --cask android-commandlinetools
+export ANDROID_HOME=/opt/homebrew/share/android-commandlinetools
+yes | sdkmanager --licenses
+sdkmanager --install "platform-tools" "platforms;android-36" "build-tools;35.0.0"
+```
+
+`sdkmanager`가 "SDK XML versions up to 3 / version 4 was encountered" 경고를 내도 빌드는 정상 동작한다.
+
+### 자주 나는 오류
+
+| 증상 | 원인 | 해결 |
+| --- | --- | --- |
+| `* What went wrong:` 뒤에 숫자 `25` 하나만 나옴 | JDK 25로 실행 | `export JAVA_HOME=$(/usr/libexec/java_home -v 17)` |
+| `SDK location not found` | `ANDROID_HOME` 미설정 | 위 설치 절차 참고 또는 `local.properties`에 `sdk.dir=` 지정 |
 
 ```sh
 # android/ 폴더에서 실행
