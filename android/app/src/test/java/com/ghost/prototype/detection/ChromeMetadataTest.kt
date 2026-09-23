@@ -74,6 +74,49 @@ class ChromeMetadataTest {
         assertTrue(root.childReads <= 127)
     }
 
+    @Test fun customTabAddressIsFoundByViewIdWithoutTraversingBody() {
+        val body = Node(secret = true)
+        val content = Node(children = listOf(body))
+        val urlBar = Node(viewId = "$CHROME_PACKAGE:id/url_bar", value = "example.com")
+        val root = Node(children = listOf(content), byViewId = mapOf("$CHROME_PACKAGE:id/url_bar" to listOf(urlBar)))
+        val observation = ChromeMetadataReader().read(root, "Chrome", 100)
+        assertEquals("example.com", observation.domain)
+        assertEquals("Chrome", observation.title)
+        assertEquals(TitleSource.WINDOW, observation.titleSource)
+        assertEquals(0, body.textReads)
+        assertTrue(urlBar.released)
+    }
+
+    @Test fun viewIdLookupSkipsEditingHiddenOrForeignAddressNodes() {
+        listOf(
+            Node(viewId = "$CHROME_PACKAGE:id/url_bar", focused = true, secret = true),
+            Node(viewId = "$CHROME_PACKAGE:id/url_bar", password = true, secret = true),
+            Node(viewId = "$CHROME_PACKAGE:id/url_bar", packageName = "other", secret = true),
+        ).forEach { node ->
+            val root = Node(byViewId = mapOf("$CHROME_PACKAGE:id/url_bar" to listOf(node)))
+            val observation = ChromeMetadataReader().read(root, "Chrome", 100)
+            assertNull(observation.domain)
+            assertNull(observation.title)
+            assertEquals(0, node.textReads)
+            assertTrue(node.released)
+        }
+    }
+
+    /** 커스텀 탭 주소창은 보여도 isVisibleToUser=false로 보고된다(실기기 확인). */
+    @Test fun viewIdLookupAcceptsAddressReportedAsNotVisible() {
+        val urlBar = Node(viewId = "$CHROME_PACKAGE:id/url_bar", visible = false, value = "example.com")
+        val root = Node(byViewId = mapOf("$CHROME_PACKAGE:id/url_bar" to listOf(urlBar)))
+        assertEquals("example.com", ChromeMetadataReader().read(root, "Chrome", 100).domain)
+    }
+
+    @Test fun traversalResultWinsOverViewIdLookup() {
+        val root = Node(
+            children = listOf(address()),
+            byViewId = mapOf("$CHROME_PACKAGE:id/url_bar" to listOf(Node(viewId = "$CHROME_PACKAGE:id/url_bar", value = "other.example"))),
+        )
+        assertEquals("example.com", ChromeMetadataReader().read(root, "Chrome", 100).domain)
+    }
+
     private fun address() = Node(viewId = "$CHROME_PACKAGE:id/url_bar", value = "example.com/path?q=secret")
 
     private class Node(
@@ -87,6 +130,7 @@ class ChromeMetadataTest {
         val value: String? = null,
         val children: List<Node> = emptyList(),
         val secret: Boolean = false,
+        val byViewId: Map<String, List<Node>> = emptyMap(),
     ) : ChromeNode {
         var textReads = 0
         var childReads = 0
@@ -103,5 +147,6 @@ class ChromeMetadataTest {
         override val childCount get() = children.size
         override fun child(index: Int): ChromeNode { childReads++; return children[index] }
         override fun release() { released = true }
+        override fun findByViewId(viewId: String): List<ChromeNode> = byViewId[viewId].orEmpty()
     }
 }
