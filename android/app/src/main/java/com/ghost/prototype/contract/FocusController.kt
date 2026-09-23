@@ -22,6 +22,13 @@ data class FocusSnapshot(
     val state: SessionState = SessionState.WAITING,
     /** `shared/states.md`의 `interventionLevel` (0~3). */
     val interventionLevel: Int = 0,
+    /**
+     * 이번 세션의 누적 딴짓 시간(초). `shared/api-schema.md`의 `devices[].distractSeconds`와 같은 값이다.
+     *
+     * **연속이 아니라 합계다.** 딴짓 → 잠깐 복귀 → 딴짓을 반복해도 이어지고,
+     * 유예 시간 이상 집중해야 0으로 돌아간다. 세션이 끝나면 0이다.
+     */
+    val distractSeconds: Int = 0,
     val floatingVisible: Boolean = false,
     val error: FocusError? = null,
 )

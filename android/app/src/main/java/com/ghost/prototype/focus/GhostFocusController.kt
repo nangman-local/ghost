@@ -84,6 +84,7 @@ class GhostFocusController(
                 taskId = task,
                 state = machine.session,
                 interventionLevel = machine.level,
+                distractSeconds = machine.distractSeconds,
                 floatingVisible = float.visible,
                 error = float.error?.let {
                     if (overlayGranted()) FocusError.OVERLAY_ATTACH_FAILED
@@ -119,7 +120,7 @@ class GhostFocusController(
         publish()
     }
 
-    /** 세션 누적 딴짓 시간(#62). */
+    /** 세션 누적 딴짓 시간(#62). `state.value.distractSeconds`와 같다. */
     val distractSeconds: Int get() = machineState.value.distractSeconds
 
     private fun onObserved(observation: AppObservation?) {

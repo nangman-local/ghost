@@ -41,6 +41,28 @@ class HomeContentTest {
     }
 
     @Test
+    fun `세션 누적이 오늘 누적보다 크면 세션 값을 보여준다`() {
+        // 서버가 오늘 누적을 안 내려주는 동안(#14) 화면에 0이 박혀 있지 않게 한다(#71).
+        val content = homeContent(
+            task, "t1", SessionState.DISTRACT, listOf(task), FocusStats(0, 0), "",
+            sessionDistractSeconds = 754,
+        )
+        content as HomeContent.InProgress
+        assertEquals("0:12", content.distractTime)
+    }
+
+    @Test
+    fun `오늘 누적이 더 크면 오늘 누적을 보여준다`() {
+        // 오늘 이미 쌓인 시간이 이번 세션보다 많을 수 있다. 그때는 오늘 값이 맞다.
+        val content = homeContent(
+            task, "t1", SessionState.DISTRACT, listOf(task), FocusStats(0, 2063), "",
+            sessionDistractSeconds = 60,
+        )
+        content as HomeContent.InProgress
+        assertEquals("0:34", content.distractTime)
+    }
+
+    @Test
     fun stoppedSessionReturnsToReady() {
         val content = homeContent(task, "t1", SessionState.WAITING, listOf(task), FocusStats(), "")
         assertEquals(HomeContent.TaskReady(task), content)
