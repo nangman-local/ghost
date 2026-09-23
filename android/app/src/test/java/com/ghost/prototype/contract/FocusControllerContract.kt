@@ -70,6 +70,22 @@ abstract class FocusControllerContract {
         assertTrue("shared/states.md: interventionLevel은 0~3", controller.state.value.interventionLevel in 0..3)
     }
 
+    /** 누적 딴짓 시간은 음수가 될 수 없고, 세션이 없으면 0이다(#71). */
+    @Test
+    fun distractSecondsIsNeverNegative() = runTest {
+        val controller = create()
+        settle()
+        assertEquals("세션 전에는 0", 0, controller.state.value.distractSeconds)
+
+        controller.startTask("t1")
+        settle()
+        assertTrue("음수일 수 없다", controller.state.value.distractSeconds >= 0)
+
+        controller.stop()
+        settle()
+        assertEquals("세션이 끝나면 0", 0, controller.state.value.distractSeconds)
+    }
+
     /**
      * 세션은 기기 안에 하나뿐이다(#52). 어느 화면에서 시작하든 같은 세션을 본다.
      * `shared/api-schema.md`의 `devices[].state`가 기기당 하나이므로, 기기 안에서 먼저 하나여야 한다.

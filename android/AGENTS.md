@@ -63,6 +63,8 @@ UI(화면)·코어(감지·오버레이·상태머신)·서버 연동을 서로 
 - **`ui/`와 그 ViewModel은 `contract/`만 본다.** `floating/`·`detection/`·`data/`를 import하지 않는다.
   - 예외: `ui/more/`의 개발자 도구 화면. 실기기 검증용으로 `FloatingState`·`DetectionState`를 직접 본다.
     단 **시작·종료는 예외가 아니다** — 아래 "세션은 하나다" 참고.
+- `FocusSnapshot.distractSeconds`는 **이번 세션의 합계**다(#71). 연속이 아니라 누적이고, 세션이 끝나면 0이다.
+  `shared/api-schema.md`의 `devices[].distractSeconds`와 같은 값이라 서버 연동(#14) 때 그대로 올린다.
 - **contract 구현 담당:** `FocusController` → Android 코어 오너, `TaskRepository` → 서버·동기화 담당, `PermissionStatus` → UI 담당.
   - Fake를 실제 구현으로 바꿀 때는 `GhostApplication`의 연결부만 고친다.
   - contract를 바꾸면 `shared/`처럼 팀 공유 채널에 공지한다. 세 담당이 같이 쓰는 경계다.
@@ -101,6 +103,9 @@ Figma 시안은 360×760 한 화면 기준 절대 좌표다. 그대로 옮기면
 - **"시작하기"는 `FocusController.startTask`, "그만하기"는 `stop()`만 부른다.** 세션만 끝나고 할 일은 남는다. 할 일 완료 처리는 서버 연동 때 정한다.
 - 할 일을 추가하면 바로 현재 할 일이 된다. 현재 할 일의 진실의 원천은 서버 세션이므로 `TaskRepository.selectTask`는 서버 담당이 구현한다.
 - '나의 기록'은 **오늘 누적**을 `H:MM`으로 보여준다(`formatHoursMinutes`).
+  딴짓 시간은 오늘 누적(`FocusStats`)과 **이번 세션 누적**(`FocusSnapshot.distractSeconds`) 중 **큰 값**을 쓴다(#71).
+  둘은 의미가 다르지만, 서버가 오늘 누적을 내려주기 전까지(#14) 화면에 0이 박혀 있는 것을 막는 임시 보정이다.
+  **서버 연동이 되면 이 보정을 없앤다.**
 - **진행률·체크포인트(10/30/50%)는 자리표시 값이다.** 의미(시간 기준인지 작업 단계인지)가 정해지지 않았다. 정해지면 contract로 받는다.
 - 할 일 행 ›는 할 일 목록·추가 팝업을 연다. 시안이 없어 임시 구성이며, 시안이 나오면 `TaskPickerContent`만 바꾼다(띄우는 방식은 `TaskPickerSheet`).
 - '그만하기' 버튼은 Figma '나의 기록' 카드의 빈 박스(56:571) 자리에 임시로 둔 것이다.

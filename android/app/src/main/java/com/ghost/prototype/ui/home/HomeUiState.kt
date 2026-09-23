@@ -52,6 +52,14 @@ fun formatHoursMinutes(seconds: Long): String {
 }
 
 /** contract 값 → 홈 화면 상태. 순수 함수라 단위 테스트한다. */
+/**
+ * @param stats 오늘 누적. 서버가 진실의 원천이며(#14) 지금은 `TaskRepository`의 임시 값이다.
+ * @param sessionDistractSeconds **이번 세션의** 누적 딴짓 시간(#71). 상태머신이 실제로 센 값이다.
+ *
+ * 둘은 의미가 다르다. 서버 연동 전까지 오늘 누적을 채울 방법이 없으므로,
+ * 진행 중일 때는 **세션 값이 오늘 누적보다 크면 세션 값을 보여준다** — 화면에 0이 박혀 있는 것보다 낫다.
+ * 서버가 오늘 누적을 내려주면(#14) 이 보정은 없앤다.
+ */
 internal fun homeContent(
     currentTask: Task?,
     runningTaskId: String?,
@@ -59,6 +67,7 @@ internal fun homeContent(
     tasks: List<Task>,
     stats: FocusStats,
     input: String,
+    sessionDistractSeconds: Int = 0,
 ): HomeContent {
     val running = runningTaskId?.takeIf { sessionState != SessionState.WAITING }
         ?.let { id -> tasks.firstOrNull { it.id == id } }
@@ -69,7 +78,9 @@ internal fun homeContent(
             progress = PLACEHOLDER_PROGRESS,
             checkpoints = PLACEHOLDER_CHECKPOINTS,
             focusTime = formatHoursMinutes(stats.focusSeconds),
-            distractTime = formatHoursMinutes(stats.distractSeconds),
+            distractTime = formatHoursMinutes(
+                maxOf(stats.distractSeconds, sessionDistractSeconds.toLong()),
+            ),
         )
         currentTask != null -> HomeContent.TaskReady(currentTask)
         else -> HomeContent.NoTask(input)

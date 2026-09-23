@@ -27,10 +27,25 @@ class FakeFocusController(
 ) : FocusController {
     private val session = MutableStateFlow<String?>(null)
 
-    override val state: StateFlow<FocusSnapshot> = combine(session, floating) { taskId, f ->
+    /**
+     * UI 담당이 '나의 기록' 같은 화면을 만들 수 있도록 그럴듯한 값을 낸다(#71).
+     * 실제 누적은 코어의 상태머신이 한다 — 여기서는 시간을 세지 않는다.
+     *
+     * `StateFlow`로 두는 이유: 단순 프로퍼티로 두면 값을 바꿔도 [state]가 다시 계산되지 않는다.
+     */
+    private val fakeDistract = MutableStateFlow(0)
+
+    /** 화면을 만들 때 쓰는 값. 음수는 0으로 맞춘다. */
+    var distractSeconds: Int
+        get() = fakeDistract.value
+        set(value) { fakeDistract.value = value.coerceAtLeast(0) }
+
+    override val state: StateFlow<FocusSnapshot> =
+        combine(session, floating, fakeDistract) { taskId, f, distract ->
         FocusSnapshot(
             taskId = taskId,
             state = if (taskId == null) SessionState.WAITING else SessionState.FOCUS,
+            distractSeconds = if (taskId == null) 0 else distract,
             floatingVisible = f.visible,
             error = f.error?.let {
                 if (overlayGranted()) FocusError.OVERLAY_ATTACH_FAILED else FocusError.OVERLAY_PERMISSION_MISSING

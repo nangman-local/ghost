@@ -37,7 +37,10 @@ class HomeViewModel(
 
     val state: StateFlow<HomeUiState> = combine(data, focus.state, local) { (all, current, stats), snapshot, ui ->
         HomeUiState(
-            content = homeContent(current, snapshot.taskId, snapshot.state, all, stats, ui.input),
+            content = homeContent(
+                current, snapshot.taskId, snapshot.state, all, stats, ui.input,
+                sessionDistractSeconds = snapshot.distractSeconds,
+            ),
             error = if (ui.settingsUnavailable) HomeError.SettingsUnavailable else snapshot.error?.let(HomeError::Focus),
             picker = if (ui.pickerOpen) TaskPickerUiState(all, current?.id, ui.pickerInput) else null,
         )
