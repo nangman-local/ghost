@@ -85,6 +85,19 @@
     <string name="ghost_description">탭하면 인사하고 드래그하면 이동하는 임시 유령</string>
     <string name="greeting">안녕?</string>
     <string name="ghost_greeting_description">안녕? 드래그해서 이동하는 임시 유령</string>
+
+    <!-- 2분 협상 (#63) — interventionLevel=2, characterState=TALK -->
+    <string name="ghost_negotiation_description">딱 2분만 해보자고 제안하는 유령</string>
+    <!-- 세션의 할 일이 실제 목록에 없을 때(개발자 도구 진단 세션) 쓰는 대체 문구. -->
+    <string name="negotiation_fallback_title">지금 하는 일</string>
+    <string name="negotiation_offer">%1$s\n딱 2분만 해볼까?</string>
+    <string name="negotiation_counting">%1$s · %2$d:%3$02d 남음</string>
+    <string name="negotiation_celebrate">2분 완료! 잘했어 🎉</string>
+    <string name="negotiation_accept">해볼래</string>
+    <string name="negotiation_reject">아니, 됐어</string>
+    <string name="negotiation_continue">더 할래</string>
+    <string name="negotiation_rest">쉴래</string>
+
     <string name="error_permission">표시 권한이 없어 유령을 띄울 수 없어요.</string>
     <string name="error_overlay">유령을 표시하지 못했어요. 권한을 확인한 뒤 시작을 눌러 주세요.</string>
     <string name="error_settings">시스템 권한 설정을 열지 못했어요. 기기의 앱 설정에서 권한을 확인해 주세요.</string>

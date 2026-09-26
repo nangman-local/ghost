@@ -32,4 +32,17 @@ class OverlayBoundsTest {
         assertEquals(OverlayPosition(320, 650), bounds.clamp(OverlayPosition(900, 900), 80, 126))
         assertEquals(OverlayPosition(100, 24), bounds.clamp(OverlayPosition(100, -14), 80, 126))
     }
+
+    // --- 2분 협상 고정 위치(#63) ---
+
+    @Test fun negotiationSitsAtScreenCenter() {
+        // 유령이 어디에 드래그돼 있었는지와 무관하게 항상 같은 자리다 — 이 함수는 현재
+        // 위치를 인자로 받지 않는다. 화면 크기·창 크기만으로 정해진다.
+        assertEquals(OverlayPosition(80, 296), bounds.centered(240, 208))
+    }
+
+    @Test fun negotiationClampsWhenWindowIsWiderThanScreen() {
+        val narrow = OverlayBounds(0, 24, 200, 776)
+        assertEquals(OverlayPosition(0, 296), narrow.centered(240, 208))
+    }
 }

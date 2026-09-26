@@ -45,6 +45,8 @@ floating/FloatingService         서비스·알림·권한 감시 수명
 floating/OverlayController       WindowManager 창 생성·드래그·제거
 floating/OverlayBounds           Android 독립 좌표 로직 (단위 테스트 대상)
 floating/CharacterAppearance     개입 레벨 → 캐릭터 상태·크기 (Android 독립, 단위 테스트 대상)
+floating/NegotiationState        2분 협상 상태 전이 (Android 독립, 단위 테스트 대상, #63)
+floating/NegotiationController   NegotiationState 배선 — 개입 레벨·할 일 제목 구독, 카운트다운 틱
 detection/UsageAppMonitor        최근 외부 앱 관측
 detection/ChromeAccessibilityService  Chrome 이벤트 어댑터
 detection/ChromeMetadata         도메인 정제 + 문서 루트 제목
@@ -170,11 +172,73 @@ Figma 시안은 360×760 한 화면 기준 절대 좌표다. 그대로 옮기면
 - `RuleJudge`는 지금 `shared/distract-rules.json` 값을 상수로 들고 있다. 자산 파일을 읽는 방식은 서버가 규칙을 내려주는 #12 때 정한다.
   **값을 고칠 때는 `shared/distract-rules.json`을 먼저 고치고 반영한다.**
 
+## 2분 협상 (`floating/NegotiationState`·`NegotiationController`, #63)
+
+`shared/states.md`의 `interventionLevel = 2`("복귀 제안")를 실제로 채우는 곳이다.
+
+- **딴짓 판단과 완전히 분리한다.** `NegotiationMachine`은 `FocusStateMachine`을 모른다.
+  개입 레벨·할 일 제목만 구독해 무엇을 보여줄지만 정한다. **거절해도 레벨·누적은 그대로다** —
+  협상은 화면 위에 얹힌 표시일 뿐, 딴짓 판단 자체를 바꾸지 않는다.
+- **레벨 2가 된다고 자동으로 뜨지 않는다. 유령을 탭해야 연다(`NegotiationController.reveal`).**
+  처음엔 레벨 2가 되면 바로 말풍선을 띄웠는데, 유령이 드래그돼 있던 화면 아무 자리에서
+  예고 없이 튀어나와 하필 중요한 내용을 가릴 수 있다는 문제가 있었다. 캐릭터 표현(눈 커짐 등,
+  `CharacterAppearance`)으로 레벨이 올랐다는 신호는 주되, 내용을 볼지는 사용자가 정한다.
+  탭 인터랙션(#64: "1회 터치 → 현재 할 일·진행 상태")과도 이 지점에서 자연스럽게 이어진다 —
+  세션 중 탭하면 레벨 2일 때만 이 제안이 뜨고, 아니면 기존 "안녕?"으로 넘어간다.
+- **상태:** `Hidden → Offer → Counting → Celebrate`. 레벨이 2 밑으로 내려가면(복귀) 어느 단계에
+  있든 `Hidden`으로 정리한다. 거절하면 `Hidden`으로 돌아가지만 **레벨이 2인 동안은 "열어볼 수
+  있다"는 사실 자체는 남아 있다** — 다시 탭하면 또 열린다. 사용자가 스스로 다시 확인하는 것까지
+  막을 이유는 없다.
+- **`Offer`는 처음엔 "해볼래"만 보여준다.** 거절 선택지(`rejectVisible`)는 **유령을 한 번 더
+  탭해야**(`NegotiationMachine.revealReject`) 나온다. 수락 쪽으로 살짝 기울이는 장치이지,
+  거부 자체를 막는 게 아니다 — `reject()`는 `rejectVisible`이 아니면 무시한다(화면에 없던
+  버튼이 눌릴 수 없다는 걸 로직에도 반영). `Celebrate`의 "쉴래"는 이 2단계 노출을 쓰지 않고
+  처음부터 보인다 — 이번엔 "아니, 됐어" 범위만 다뤘다.
+- **거절 시 스누즈 연계는 아직 없다(#64 선행).** 지금은 거절 = 그냥 닫기다. #64가 구현되면
+  거절을 스누즈로 이어붙일지는 그때 정한다.
+- **주 동작(수락/더 할래)만 버튼으로 강조하고, 보조 동작(거절/쉴래)은 작은 텍스트로 낮춘다.**
+  거부할 수단 자체를 없애지 않는다 — #64: "개입을 거부할 출구가 없으면 사용자는 앱을 지운다."
+  텍스트가 작아도 히트 영역은 최소 32dp를 보장한다(`CharacterView.drawNegotiationBubble`).
+- **카운트다운은 순수 Kotlin이다(`NegotiationMachine.tick`).** `GhostFocusController`의 틱과
+  같은 자리에 별도로 돈다 — 딴짓 누적 틱과 합치지 않는다(관심사가 다르다).
+  **데모 모드(#65)는 아직 이 카운트다운에 적용되지 않는다** — 항상 120초다. 개입 레벨은
+  데모에서 초 단위로 빨라지는데 협상만 2분 그대로라 시연 흐름이 어긋날 수 있다(후속 과제).
+- **할 일 제목이 없으면 대체 문구를 쓴다.** 개발자 도구의 진단 세션(`DIAGNOSTIC_TASK_ID`)은
+  실제 할 일 목록에 없어 제목을 못 구한다.
+- **창을 서비스가 그린다.** `applyAppearance`(레벨→표현)와 같은 원칙 — `FloatingService`가
+  `NegotiationController.state`를 구독해 `OverlayController.applyNegotiation`을 부른다.
+- **첫 행동 문구는 고정 템플릿이다.** AI Task Breakdown(#12) 없이 "[할 일] 딱 2분만 해볼까?"
+  하나로 시작한다.
+
 ## 오버레이 규칙
 
 - **Android 12 이상은 불투명 오버레이 아래로 터치가 전달되지 않는다.** 개입 3단계의 "콘텐츠 일부 가리기"는 **가린 영역만** 터치를 막고 나머지 화면은 정상 동작해야 한다. 클릭을 완전히 막지 않는다.
 - 전체 화면 투명 창을 만들지 않는다. 캐릭터 크기의 작은 창만 만든다.
 - 투명한 여백도 드래그 영역에 포함된다.
+- **협상 중에는 창이 `NEGOTIATION_WIDTH_DP`(240dp)까지 넓어진다(#63).** 말풍선·버튼을 담기에
+  캐릭터(80dp)만으로는 부족해서다.
+- **협상 중인 창은 유령이 있던 자리가 아니라 화면 정중앙의 고정된 자리에 뜬다**
+  (`OverlayBounds.centered`). 유령 위치 그대로 키우면 화면 어디서나(하필 중요한 내용
+  위일 수도 있게) 예측 불가능하게 떴다 — 대신 항상 같은 안전한 자리로 옮기고, 협상이
+  끝나면(수락 완료·거절·복귀) `OverlayController.positionBeforeNegotiation`에 저장해 둔
+  원래 자리로 되돌린다. 레벨에 따른 일반적인 크기 변화(`applyAppearance`)는 여전히 캐릭터를
+  창의 오른쪽 아래에 고정한 채 왼쪽·위로 자라는 기존 방식을 쓴다 — 고정 위치는 **협상 중일
+  때만** 적용된다.
+- **협상 중 캐릭터 몸을 한 번 더 탭하면(`CharacterView.negotiationCharacterAreaAt`) 거절
+  선택지를 연다.** 버튼이 아닌 말풍선 여백을 눌렀을 때와는 구분한다 — 여백은 무시하고,
+  캐릭터 몸(오른쪽 아래 80×88dp)만 이 반응을 한다.
+- **캐릭터 그림은 협상 중에도 항상 80×88dp로, 창의 오른쪽 아래에 그린다.** 가로(`CHARACTER_SIZE_DP`,
+  80)와 세로(`CHARACTER_HEIGHT_DP`, 88)가 다르다 — 발 부분이 아래로 더 나온다. 세로에도
+  `CHARACTER_SIZE_DP`를 쓰면 발이 창 밖으로 잘린다(실기기에서 실제로 겪음).
+- **"안녕?" 말풍선과 협상 UI는 배타적이다.** 창 크기 계산(`OverlayController.applyLayout`)도
+  이 배타성을 지켜야 한다 — 안 지키면 협상 중에도 "안녕?"의 38dp 여백이 남아 말풍선과
+  캐릭터 사이가 벌어진다(실기기에서 실제로 겪음: 유령을 톡 건드려 인사 여백이 켜진 채로
+  레벨 2에 도달하면 재현된다).
+- **버튼 히트 테스트는 `CharacterView`가 직접 한다.** Compose를 오버레이 창에 넣지 않고,
+  기존 Canvas 그리기 방식(`android/AGENTS.md`가 이미 그렇게 해 온 방식)을 그대로 따른다 —
+  그릴 때 버튼 사각형을 기록해 뒀다가 `ACTION_UP`에서 그 사각형 안인지 본다.
+  **협상 중에는 버튼 밖을 눌러도 인사(안녕?)로 새지 않는다** — `showGreeting()`의 창 크기
+  계산은 협상용 크기와 다른 가정을 쓰기 때문에 섞이면 창 크기가 꼬인다.
 
 ## 감지 규칙
 
