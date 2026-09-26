@@ -35,9 +35,11 @@ class FloatingService : Service() {
     private val detection get() = (application as GhostApplication).detectionState
     private val usageMonitor by lazy { UsageAppMonitor(this, detection) }
     private val focus get() = (application as GhostApplication).focusController
-    /** 개입 레벨 구독(#77). 서비스가 사는 동안만 돈다. */
+    private val negotiation get() = (application as GhostApplication).negotiationController
+    /** 개입 레벨·협상 구독(#77·#63). 서비스가 사는 동안만 돈다. */
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private var appearanceJob: Job? = null
+    private var negotiationJob: Job? = null
     private val handler = Handler(Looper.getMainLooper())
     private val permissionListener = AppOpsManager.OnOpChangedListener { op, packageName ->
         if (op == AppOpsManager.OPSTR_SYSTEM_ALERT_WINDOW && packageName == this.packageName) {
@@ -70,14 +72,19 @@ class FloatingService : Service() {
             if (!Settings.canDrawOverlays(this)) {
                 fail(R.string.error_permission)
             } else {
-                val controller = overlay ?: OverlayController(this, state) {
-                    fail(R.string.error_overlay)
-                }.also { overlay = it }
+                val controller = overlay ?: OverlayController(
+                    context = this,
+                    state = state,
+                    onWindowLost = { fail(R.string.error_overlay) },
+                    onNegotiationAction = ::onNegotiationAction,
+                    onCharacterTapped = { negotiation.reveal() },
+                ).also { overlay = it }
                 controller.show()
                 if (state.state.value.visible) {
                     detection.start(System.currentTimeMillis())
                     usageMonitor.start()
                     observeInterventionLevel()
+                    observeNegotiation()
                 }
             }
         } catch (error: RuntimeException) {
@@ -94,6 +101,7 @@ class FloatingService : Service() {
 
     private fun fail(message: Int) {
         appearanceJob?.cancel()
+        negotiationJob?.cancel()
         usageMonitor.stop()
         state.failed(getString(message))
         overlay?.hide()
@@ -134,8 +142,29 @@ class FloatingService : Service() {
             .launchIn(serviceScope)
     }
 
+    /**
+     * 2분 협상(#63) 표시를 구독한다. `NegotiationController`가 개입 레벨·할 일 제목을 보고 판단만
+     * 내리고, 창을 그리는 건 여기(창을 가진 서비스)다 — `applyAppearance` 구독과 같은 원칙이다.
+     */
+    private fun observeNegotiation() {
+        negotiationJob?.cancel()
+        negotiationJob = negotiation.state
+            .onEach { overlay?.applyNegotiation(it) }
+            .launchIn(serviceScope)
+    }
+
+    private fun onNegotiationAction(action: NegotiationAction) {
+        when (action) {
+            NegotiationAction.ACCEPT -> negotiation.accept()
+            NegotiationAction.REJECT -> negotiation.reject()
+            NegotiationAction.CONTINUE -> negotiation.continueMore()
+            NegotiationAction.REST -> negotiation.rest()
+        }
+    }
+
     override fun onDestroy() {
         appearanceJob?.cancel()
+        negotiationJob?.cancel()
         serviceScope.cancel()
         usageMonitor.stop()
         getSystemService(AppOpsManager::class.java).stopWatchingMode(permissionListener)

@@ -10,6 +10,7 @@ import com.ghost.prototype.data.PreferencesTaskStorage
 import com.ghost.prototype.focus.GhostFocusController
 import com.ghost.prototype.focus.RuleJudge
 import com.ghost.prototype.floating.FloatingStateStore
+import com.ghost.prototype.floating.NegotiationController
 import com.ghost.prototype.detection.DetectionStateStore
 import com.ghost.prototype.permission.AndroidPermissionStatus
 import kotlinx.coroutines.MainScope
@@ -43,6 +44,20 @@ class GhostApplication : Application() {
                 .stateIn(appScope, SharingStarted.Eagerly, null),
             judge = RuleJudge.fromSharedRules(packageName),
             overlayGranted = { permissionStatus.isGranted(Permission.OVERLAY) },
+            scope = appScope,
+        )
+    }
+
+    /** 2분 협상(#63). `focusController`의 개입 레벨과 `taskRepository`의 할 일 제목만 본다. */
+    val negotiationController: NegotiationController by lazy {
+        NegotiationController(
+            interventionLevel = focusController.state
+                .map { it.interventionLevel }
+                .stateIn(appScope, SharingStarted.Eagerly, 0),
+            currentTaskTitle = taskRepository.currentTask
+                .map { it?.title }
+                .stateIn(appScope, SharingStarted.Eagerly, null),
+            fallbackTitle = getString(R.string.negotiation_fallback_title),
             scope = appScope,
         )
     }

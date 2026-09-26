@@ -19,6 +19,13 @@ class OverlayController(
     context: Context,
     private val state: FloatingStateStore,
     private val onWindowLost: () -> Unit,
+    /** 협상 말풍선(#63)의 버튼을 눌렀다. `FloatingService`가 `NegotiationController`로 넘긴다. */
+    private val onNegotiationAction: (NegotiationAction) -> Unit = {},
+    /**
+     * 유령을 탭했다(드래그·협상 버튼 아님). **레벨 2 제안은 자동으로 안 뜨고 이 탭으로 연다(#63).**
+     * `true`를 반환하면 제안을 연 것이므로 "안녕?"은 건너뛴다.
+     */
+    private val onCharacterTapped: () -> Boolean = { false },
 ) {
     // A Service is non-visual: associate it with the phone display before making
     // a window context. Calling createWindowContext directly on it crashes.
@@ -34,6 +41,9 @@ class OverlayController(
     private val height = (88 * density).roundToInt()
     private var view: CharacterView? = null
     private var params: WindowManager.LayoutParams? = null
+
+    /** 협상(#63) 시작 직전, 유령이 실제로 있던 자리. 협상이 끝나면 여기로 되돌린다. */
+    private var positionBeforeNegotiation: OverlayPosition? = null
 
     fun show() {
         if (view != null) return
@@ -58,7 +68,8 @@ class OverlayController(
             }
         }
         val character = CharacterView(windowContext)
-        character.setOnClickListener { showGreeting() }
+        // 제안이 열려 있으면(#63) "안녕?"을 건너뛴다. TalkBack 등 접근성 클릭도 이 경로를 탄다.
+        character.setOnClickListener { if (!onCharacterTapped()) showGreeting() }
         installDrag(character, position)
         character.addOnAttachStateChangeListener(object : View.OnAttachStateChangeListener {
             override fun onViewAttachedToWindow(v: View) = Unit
@@ -86,18 +97,84 @@ class OverlayController(
      */
     fun applyAppearance(appearance: CharacterAppearance) {
         val character = view ?: return
-        val layout = params ?: return
         if (character.appearance == appearance) return
         character.appearance = appearance
+        applyLayout()
+    }
 
-        val scaledWidth = (width * appearance.scale).roundToInt()
-        val scaledHeight = (height * appearance.scale).roundToInt()
-        val grewBy = scaledHeight - layout.height
-        layout.width = scaledWidth
-        layout.height = scaledHeight + greetingExtraHeight()
-        // 커질 때 아래로 자라면 화면 밖으로 밀리기 쉽다. 위로 자라게 해서 제자리에 머물게 한다.
+    /**
+     * 2분 협상(#63) 표시를 바꾼다. `Hidden`이 아니면 창이 [CharacterView.NEGOTIATION_WIDTH_DP]까지
+     * 옆으로, [CharacterView.NEGOTIATION_HEIGHT_DP]만큼 위로 넓어져 말풍선·버튼을 담는다.
+     *
+     * **협상 중에는 화면 하단 중앙의 고정된 자리로 옮긴다.** 유령이 드래그돼 있던 자리에서
+     * 그대로 커지면 화면 아무 데서나(하필 중요한 내용 위일 수도 있게) 뜬다 — 예측할 수 없다.
+     * 대신 항상 같은 안전한 자리에서 뜨게 하고, 끝나면(수락 완료·거절·복귀) 유령을 원래
+     * 있던 자리로 되돌린다.
+     */
+    fun applyNegotiation(negotiation: NegotiationState) {
+        val character = view ?: return
+        if (character.negotiation == negotiation) return
+        val wasNegotiating = character.negotiation != NegotiationState.Hidden
+        val entering = negotiation != NegotiationState.Hidden && !wasNegotiating
+        val exiting = negotiation == NegotiationState.Hidden && wasNegotiating
+        if (entering) positionBeforeNegotiation = state.state.value.position
+
+        character.negotiation = negotiation
+        applyLayout()
+
+        if (exiting) {
+            positionBeforeNegotiation?.let { moveTo(it) }
+            positionBeforeNegotiation = null
+        }
+    }
+
+    /**
+     * 표현·협상 상태를 반영해 창 크기를 다시 잰다.
+     *
+     * **협상 중이 아니면** 캐릭터는 항상 창의 오른쪽 아래에 고정된다 — 커질 때 왼쪽·위로
+     * 자라게 해서, 개입 레벨에 따라 커지고 작아져도 화면 위치는 거의 그대로 유지된다.
+     *
+     * **협상 중이면** 크기와 무관하게 [OverlayBounds.centered]의 고정된 자리(화면 정중앙)로
+     * 간다. `Offer`·`Counting`·`Celebrate` 사이에는 크기가 안 바뀌므로 사실상 자리를 다시
+     * 확인만 하는 셈이다.
+     */
+    private fun applyLayout() {
+        val character = view ?: return
+        val layout = params ?: return
+        val negotiating = character.negotiation != NegotiationState.Hidden
+
+        val scaledWidth = (width * character.appearance.scale).roundToInt()
+        val scaledHeight = (height * character.appearance.scale).roundToInt()
+        val targetWidth = if (negotiating) {
+            (CharacterView.NEGOTIATION_WIDTH_DP * density).roundToInt().coerceAtLeast(scaledWidth)
+        } else scaledWidth
+        // 협상 중에는 "안녕?" 말풍선을 그리지 않는다(CharacterView.onDraw) — 그런데 greetingVisible이
+        // 켜진 채로 레벨 2에 도달하면 그 여백만 남아 말풍선과 캐릭터 사이가 벌어진다. 둘은 배타적이다.
+        val extraHeight = if (negotiating) {
+            (CharacterView.NEGOTIATION_HEIGHT_DP * density).roundToInt()
+        } else {
+            greetingExtraHeight()
+        }
+        val targetHeight = scaledHeight + extraHeight
+
+        if (negotiating) {
+            layout.width = targetWidth
+            layout.height = targetHeight
+            moveTo(bounds().centered(targetWidth, targetHeight))
+            return
+        }
+
+        val grewWidthBy = targetWidth - layout.width
+        val grewHeightBy = targetHeight - layout.height
+        layout.width = targetWidth
+        layout.height = targetHeight
         val position = state.state.value.position ?: return
-        moveTo(position.copy(y = position.y - grewBy.coerceAtLeast(0)))
+        moveTo(
+            position.copy(
+                x = position.x - grewWidthBy.coerceAtLeast(0),
+                y = position.y - grewHeightBy.coerceAtLeast(0),
+            ),
+        )
     }
 
     private fun greetingExtraHeight(): Int =
@@ -148,7 +225,7 @@ class OverlayController(
         state.stopped()
     }
 
-    private fun installDrag(character: View, initial: OverlayPosition) {
+    private fun installDrag(character: CharacterView, initial: OverlayPosition) {
         var downX = 0f
         var downY = 0f
         var origin = initial
@@ -172,7 +249,17 @@ class OverlayController(
                 }
                 MotionEvent.ACTION_UP -> {
                     val distance = hypot(event.rawX - downX, event.rawY - downY)
-                    if (!dragging && distance <= touchSlop) touched.performClick()
+                    if (!dragging && distance <= touchSlop) {
+                        val action = character.negotiationActionAt(event.x, event.y)
+                        when {
+                            action != null -> onNegotiationAction(action)
+                            character.negotiation == NegotiationState.Hidden -> touched.performClick()
+                            // 협상 중 캐릭터 몸을 한 번 더 탭하면(#63) 거절 선택지를 연다.
+                            // 말풍선 여백처럼 캐릭터도 버튼도 아닌 곳은 무시한다 — 인사로 새지 않는다
+                            // (showGreeting()의 창 크기 계산은 협상용 크기와 다른 가정을 쓴다).
+                            character.negotiationCharacterAreaAt(event.x, event.y) -> onCharacterTapped()
+                        }
+                    }
                     dragging = false
                     true
                 }
