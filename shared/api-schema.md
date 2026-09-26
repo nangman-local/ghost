@@ -102,14 +102,77 @@ W0 세션 API 입출력 초안. **서버 세션이 진실의 원천이다.**
 
 ## 할 일
 
-- `GET /tasks` — 목록
-- `POST /tasks` — 생성. 등록 시 LLM 1회 호출로 "할 일 프로필"을 생성한다 (실시간 아님)
-- `PATCH /tasks/{id}` — 수정
+MVP 1차 Task API는 `GET /tasks`, `POST /tasks`로 Task 기본 정보의 조회·생성만 구현한다.
+
+- `source`: `CALENDAR` · `NOTION` · `MANUAL`. 직접 입력으로 생성한 Task는 서버가 `MANUAL`로 설정한다.
+- 동일한 `title`의 Task 생성을 허용한다.
+- userId는 Request Body나 Query Parameter로 받지 않으며, 아래 GET/POST 응답 Task에도 포함하지 않는다. 인증 적용 시 서버가 인증 정보에서 현재 사용자를 식별한다.
+- `id`는 서버/DB에서 생성한다. 클라이언트는 ID를 생성하거나 형식을 해석하지 않는다. `t_9`는 예시일 뿐 생성 규칙이 아니다.
+- Task 생성과 시작 전 Task 선택은 분리한다. 서버는 Task의 저장·조회를 담당하고, 시작 전 현재 Task 선택 상태는 Android에서 로컬로 관리한다. 세션이 시작된 이후 현재 수행 중인 Task는 Session의 `task`를 기준으로 한다.
+
+### `GET /tasks` — 목록
+
+현재 사용자의 Task 목록을 조회한다. Request Body는 없다.
+
+응답: `200 OK`. wrapper 없이 Task 배열을 반환한다.
+
+```json
+[
+  {
+    "id": "t_9",
+    "title": "자료구조 과제",
+    "source": "MANUAL"
+  }
+]
+```
+
+Task가 없으면 `200 OK`로 빈 배열을 반환한다.
+
+```json
+[]
+```
+
+**TODO:** 목록 정렬 기준은 DB 모델과 함께 확정한다. 현재는 생성순·ID순·최신순 등 특정 순서를 보장하지 않는다.
+
+### `POST /tasks` — 생성
+
+현재 사용자가 직접 입력한 Task를 생성한다.
+
+요청
+
+```json
+{
+  "title": "자료구조 과제"
+}
+```
+
+응답: `201 Created`. 생성된 Task 객체를 반환한다.
+
+```json
+{
+  "id": "t_9",
+  "title": "자료구조 과제",
+  "source": "MANUAL"
+}
+```
+
+- `title`은 필수다. 서버에서 앞뒤 공백을 제거한 값을 저장하고 응답한다. trim 후 빈 문자열이면 `400 Bad Request`를 반환한다. 오류 응답은 문서 상단의 공통 오류 형식을 따른다.
+- `source`는 요청에서 받지 않으며 서버가 `MANUAL`로 설정한다.
+- `POST /tasks` 자체는 현재 Task 선택 상태를 변경하지 않는다. Android는 성공 응답을 받은 뒤 생성된 Task를 로컬의 현재 선택 Task로 설정한다.
+- MVP 1차에서는 TaskProfile 생성에 의존하지 않는다.
+
+**TODO:** `title` 최대 길이 및 DB 제약은 DB 모델과 함께 확정한다. Task ID의 구체적인 생성 전략도 DB 담당자와 협의하며, 이번 계약에서는 정하지 않는다.
+
+### 이후 구현할 기능
+
+- `PATCH /tasks/{id}` — 수정. 구체적인 Request / Response 계약은 수정 기능 구현 전에 확정한다.
 - `POST /tasks/{id}/allowlist` — 사용자 교정. `{ "app": "com.android.chrome", "domain": "docs.google.com" }` 을 즉시 허용 목록에 반영
 
 ### 할 일 프로필
 
-`POST /tasks` 시 LLM을 1회 호출해 생성하고 저장한다. 판단할 때마다 호출하지 않는다.
+MVP 1차에서는 TaskProfile의 LLM 생성·저장을 구현하지 않는다. POST /tasks는 Task 기본 정보만 생성하며 프로필 생성에 의존하지 않는다.
+
+TaskProfile 생성 기능은 /judge 연동 단계에서 구현한다. 해당 기능이 도입된 이후에는 POST /tasks 시 LLM을 1회 호출해 프로필을 생성·저장하고, /judge 판단 시에는 저장된 프로필을 조회해 사용한다. 판단할 때마다 프로필 생성용 LLM을 호출하지 않는다.
 `/judge`의 판단 기준이자, 로컬 규칙 판단의 2차 기준으로도 쓴다.
 
 ```json
