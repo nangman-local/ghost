@@ -11,6 +11,7 @@ import com.ghost.prototype.focus.GhostFocusController
 import com.ghost.prototype.focus.RuleJudge
 import com.ghost.prototype.floating.FloatingStateStore
 import com.ghost.prototype.detection.DetectionStateStore
+import com.ghost.prototype.detection.ScreenStateMonitor
 import com.ghost.prototype.permission.AndroidPermissionStatus
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.flow.SharingStarted
@@ -26,6 +27,13 @@ class GhostApplication : Application() {
     val floatingState = FloatingStateStore()
     val detectionState by lazy { DetectionStateStore(packageName) }
     val floatingLauncher by lazy { FloatingLauncher(this) }
+    private val screenStateMonitor by lazy { ScreenStateMonitor(this) }
+
+    override fun onCreate() {
+        super.onCreate()
+        // 세션 시작 전에도 현재 화면 상태를 알고 있어야 하므로 프로세스 시작 시 한 번만 등록한다(#70).
+        screenStateMonitor.register()
+    }
 
     // UI ↔ 코어 ↔ 서버 연결 지점. Fake를 실제 구현으로 바꿀 때는 여기만 고친다.
     private val appScope = MainScope()
@@ -44,6 +52,7 @@ class GhostApplication : Application() {
             judge = RuleJudge.fromSharedRules(packageName),
             overlayGranted = { permissionStatus.isGranted(Permission.OVERLAY) },
             scope = appScope,
+            screenOn = screenStateMonitor::isScreenOn,
         )
     }
 }
