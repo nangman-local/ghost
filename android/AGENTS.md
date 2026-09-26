@@ -48,6 +48,7 @@ floating/CharacterAppearance     개입 레벨 → 캐릭터 상태·크기 (And
 detection/UsageAppMonitor        최근 외부 앱 관측
 detection/ChromeAccessibilityService  Chrome 이벤트 어댑터
 detection/ChromeMetadata         도메인 정제 + 문서 루트 제목
+detection/ScreenStateMonitor     화면 on/off 관측 (틱 정지 판단용, #70)
 focus/FocusStateMachine          딴짓 누적 → 개입 레벨 승급 (Android 독립, 단위 테스트 대상)
 focus/InterventionPolicy         개입 임계값 (기본·데모 모드)
 focus/RuleJudge                  로컬 규칙 판단 (FOCUS/DISTRACT/AMBIGUOUS)
@@ -167,6 +168,12 @@ Figma 시안은 360×760 한 화면 기준 절대 좌표다. 그대로 옮기면
   빼면 10분을 봤는데 누적이 9분 40초가 되어 "유튜브 본 지 10분 됐어"가 거짓말이 된다(`누적은 유지 시간만큼 깎이지 않는다` 테스트).
 - **감지 실패는 딴짓이 아니다.** 관측이 없거나 `AMBIGUOUS`면 누적하지 않고 개입하지도 않는다. 오탐이 미탐보다 훨씬 치명적이다.
 - **틱 루프는 세션이 끝나면 같이 끝난다.** 대기 중에 타이머를 돌리지 않는다. 끝나지 않는 루프는 테스트에서 `advanceUntilIdle`을 멈추지 못하게 만든다.
+- **화면이 꺼진 동안은 누적이 멈춘다(#70).** `UsageAppMonitor`는 화면이 꺼져도 계속 폴링하고, 마지막 관측(예: 인스타그램)이 그대로 남아 있어서
+  손대지 않으면 `GhostFocusController`의 1초 틱이 그 판정을 계속 재확인해 딴짓으로 쌓는다 — 그대로 두면 "8시간 자고 일어났더니 3단계"가 된다.
+  `ScreenStateMonitor.isScreenOn()`을 매 틱 확인해 꺼져 있으면 `lastTickAt`만 현재로 밀고 `machine.tick()`을 아예 부르지 않는다.
+  **리셋하지 않고 멈춘 지점부터 이어간다** — 꺼져 있던 시간을 몰아서 누적하지도, 복귀로 처리하지도 않는다.
+  **잠금 여부는 보지 않는다.** 화면이 켜진 채 잠겨 있는 동안(잠금 화면)은 이 판단에서 "켜짐"으로 본다 — 그 상태까지 딴짓 누적을 막을 근거는 없다고 판단했다.
+  검증 중 화면을 여러 번 껐다 켰다 하며 잠금 해제에 실패하면(폰이 깨어 있는 채 잠금 화면만 떠 있는 상태) 그동안도 누적된다 — 실기기 검증 때 실제로 겪은 함정이다.
 - `RuleJudge`는 지금 `shared/distract-rules.json` 값을 상수로 들고 있다. 자산 파일을 읽는 방식은 서버가 규칙을 내려주는 #12 때 정한다.
   **값을 고칠 때는 `shared/distract-rules.json`을 먼저 고치고 반영한다.**
 

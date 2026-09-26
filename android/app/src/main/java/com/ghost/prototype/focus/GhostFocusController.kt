@@ -41,6 +41,12 @@ class GhostFocusController(
     private val overlayGranted: () -> Boolean,
     private val scope: CoroutineScope,
     policy: InterventionPolicy = InterventionPolicy(),
+    /**
+     * 화면이 켜져 있는지(#70). `ScreenStateMonitor.isScreenOn`을 넘긴다.
+     * 화면이 꺼진 동안은 틱을 건너뛰어 딴짓 누적·복귀 유예·스누즈 잔여시간이 전부 멈춘다.
+     * 화면이 다시 켜지면 멈춘 지점부터 이어간다 — 꺼져 있던 시간을 한꺼번에 몰아 누적하지 않는다.
+     */
+    private val screenOn: () -> Boolean = { true },
     /** 테스트에서 시간을 제어하기 위해 주입한다. */
     private val nowMillis: () -> Long = System::currentTimeMillis,
     private val delayMillis: suspend (Long) -> Unit = { kotlinx.coroutines.delay(it) },
@@ -161,6 +167,14 @@ class GhostFocusController(
         val now = nowMillis()
         val elapsed = ((now - lastTickAt) / 1000).toInt()
         if (elapsed <= 0) return
+
+        // 화면이 꺼진 동안은 시간이 흐르지 않은 것으로 친다(#70).
+        // `lastTickAt`을 계속 현재로 밀어 두어, 다시 켜졌을 때 꺼져 있던 시간이
+        // 한 번에 딴짓으로 누적되지 않게 한다(그렇지 않으면 "잠들었더니 3단계"가 된다).
+        if (!screenOn()) {
+            lastTickAt = now
+            return
+        }
 
         val held = ((now - judgementSince) / 1000).toInt()
         val observation = currentJudgement?.let { Observation(it, held) }
